@@ -7,20 +7,26 @@ __pycache__/
 *.egg-info/
 dist/
 build/
+*.pyc
 
 # Virtual Environment
 env/
 .venv/
 venv/
 ENV/
+Scripts/
+Lib/
+Include/
+pyvenv.cfg
 
 # Django
 *.log
 db.sqlite3
 db.sqlite3-journal
-/static/
+/staticfiles/
 /media/
 *.pot
+local_settings.py
 
 # IDE
 .vscode/
@@ -28,20 +34,40 @@ db.sqlite3-journal
 *.swp
 *.swo
 *~
+*.code-workspace
 
 # OS
 .DS_Store
 Thumbs.db
+desktop.ini
 
 # Environment Variables
 .env
 .env.local
+.env.*.local
 
 # MongoDB
 *.bson
 dump/
+*.lock
 
 # Backup files
 *.bak
 *.backup
 
+# Test coverage
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+*.cover
+
+# Documentation - excluding specific project documentation files
+TESTING_GUIDE.md
+ROLE_BASED_SYSTEM.md
+TASK_COMPLETION.md
+ARCHITECTURE.md
+
+# Session data
+sessions/
+*.session
