@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard - Radiology AI{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <div class="dashboard-header">
+        <h1>Welcome, {{ user_name }}! 👋</h1>
+        <p class="dashboard-subtitle">AI-Assisted Radiology Reporting Dashboard</p>
+    </div>
+    
+    <div class="dashboard-content">
+        <div class="info-section">
+            <div class="info-card">
+                <h2>About Our Solution</h2>
+                <p>
+                    Our AI-Assisted Radiology Reporting System is designed exclusively for hospital use, 
+                    enabling medical professionals to deliver faster and more accurate diagnoses.
+                </p>
+                
+                <div class="features-list">
+                    <h3>Key Features:</h3>
+                    <ul>
+                        <li>🔬 <strong>Automated Scan Analysis</strong> - AI analyzes X-rays, CT, and MRI scans</li>
+                        <li>📊 <strong>Confidence Scoring</strong> - Each report includes AI confidence levels</li>
+                        <li>✏️ <strong>Expert Review</strong> - Radiologists can edit and finalize reports</li>
+                        <li>🗄️ <strong>Secure Storage</strong> - Patient records stored in internal database</li>
+                        <li>⚡ <strong>Reduced Delays</strong> - Faster reporting workflow for timely decisions</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="info-card">
+                <h2>Your Role</h2>
+                <p>As a registered user of the system, you have access to:</p>
+                <ul>
+                    <li>View and manage patient imaging scans</li>
+                    <li>Review AI-generated diagnostic reports</li>
+                    <li>Edit and approve preliminary findings</li>
+                    <li>Access historical patient data</li>
+                    <li>Collaborate with other medical professionals</li>
+                </ul>
+            </div>
+            
+            <div class="info-card stats-card">
+                <h2>System Benefits</h2>
+                <div class="stats-grid">
+                    <div class="stat">
+                        <span class="stat-value">70%</span>
+                        <span class="stat-label">Faster Reporting</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-value">95%</span>
+                        <span class="stat-label">Accuracy Rate</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-value">50%</span>
+                        <span class="stat-label">Reduced Workload</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-value">24/7</span>
+                        <span class="stat-label">Availability</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="action-section">
+            <h2>Quick Actions</h2>
+            <div class="action-buttons">
+                <button class="action-btn" disabled>
+                    <span class="action-icon">📤</span>
+                    <span>Upload Scan</span>
+                    <span class="coming-soon">Coming Soon</span>
+                </button>
+                <button class="action-btn" disabled>
+                    <span class="action-icon">📋</span>
+                    <span>View Reports</span>
+                    <span class="coming-soon">Coming Soon</span>
+                </button>
+                <button class="action-btn" disabled>
+                    <span class="action-icon">👥</span>
+                    <span>Patient Records</span>
+                    <span class="coming-soon">Coming Soon</span>
+                </button>
+                <button class="action-btn" disabled>
+                    <span class="action-icon">⚙️</span>
+                    <span>Settings</span>
+                    <span class="coming-soon">Coming Soon</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

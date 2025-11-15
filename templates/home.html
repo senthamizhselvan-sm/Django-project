@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+
+{% block title %}Home - Radiology AI{% endblock %}
+
+{% block content %}
+<div class="hero-section">
+    <div class="hero-content">
+        <h1>AI-Assisted Radiology Reporting System</h1>
+        <p class="hero-subtitle">Revolutionizing Medical Imaging Analysis for Hospitals</p>
+        
+        <div class="feature-grid">
+            <div class="feature-card">
+                <div class="feature-icon">🔬</div>
+                <h3>Automated Analysis</h3>
+                <p>Advanced AI models analyze X-rays, CT, and MRI scans automatically</p>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">⚡</div>
+                <h3>Faster Diagnosis</h3>
+                <p>Reduce reporting delays and speed up medical decision-making</p>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">✓</div>
+                <h3>Enhanced Accuracy</h3>
+                <p>AI-generated reports with confidence scores assist radiologists</p>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">👨‍⚕️</div>
+                <h3>Expert Review</h3>
+                <p>Radiologists can review, edit, and finalize AI-generated reports</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="about-section">
+    <div class="container">
+        <h2>How It Works</h2>
+        <div class="steps">
+            <div class="step">
+                <span class="step-number">1</span>
+                <h3>Upload Scans</h3>
+                <p>Technicians upload medical imaging scans (X-ray, CT, MRI)</p>
+            </div>
+            <div class="step">
+                <span class="step-number">2</span>
+                <h3>AI Analysis</h3>
+                <p>Machine learning models generate preliminary diagnostic reports</p>
+            </div>
+            <div class="step">
+                <span class="step-number">3</span>
+                <h3>Expert Validation</h3>
+                <p>Radiologists review and finalize the AI-generated reports</p>
+            </div>
+            <div class="step">
+                <span class="step-number">4</span>
+                <h3>Rapid Delivery</h3>
+                <p>Confirmed reports stored securely for immediate patient feedback</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="cta-section">
+    <h2>Ready to Get Started?</h2>
+    <p>Join our platform to experience the future of radiology reporting</p>
+    <div class="cta-buttons">
+        <a href="{% url 'register' %}" class="btn btn-large btn-primary">Register Now</a>
+        <a href="{% url 'login' %}" class="btn btn-large btn-secondary">Login</a>
+    </div>
+</div>
+{% endblock %}

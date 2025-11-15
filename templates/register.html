@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+
+{% block title %}Register - Radiology AI{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="auth-card">
+        <h2>Create Your Account</h2>
+        <p class="auth-subtitle">Join the AI-Assisted Radiology System</p>
+        
+        <form method="POST" action="{% url 'register' %}" class="auth-form">
+            {% csrf_token %}
+            
+            <div class="form-group">
+                <label for="full_name">Full Name</label>
+                <input type="text" id="full_name" name="full_name" required 
+                       placeholder="Enter your full name" class="form-control">
+            </div>
+            
+            <div class="form-group">
+                <label for="email">Email Address</label>
+                <input type="email" id="email" name="email" required 
+                       placeholder="Enter your email" class="form-control">
+            </div>
+            
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" required 
+                       placeholder="Enter password (min 6 characters)" class="form-control">
+            </div>
+            
+            <div class="form-group">
+                <label for="confirm_password">Confirm Password</label>
+                <input type="password" id="confirm_password" name="confirm_password" required 
+                       placeholder="Re-enter your password" class="form-control">
+            </div>
+            
+            <button type="submit" class="btn btn-primary btn-full">Register</button>
+        </form>
+        
+        <div class="auth-footer">
+            <p>Already have an account? <a href="{% url 'login' %}">Login here</a></p>
+        </div>
+    </div>
+</div>
+{% endblock %}
