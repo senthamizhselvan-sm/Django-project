@@ -24,9 +24,12 @@ pyvenv.cfg
 db.sqlite3
 db.sqlite3-journal
 /staticfiles/
-/media/
+/media/scans/
+/media/reports/
 *.pot
 local_settings.py
+*.pyc
+*.pyo
 
 # IDE
 .vscode/
@@ -62,12 +65,70 @@ htmlcov/
 coverage.xml
 *.cover
 
-# Documentation - excluding specific project documentation files
+# Temporary documentation files (excluding main README and guides)
 TESTING_GUIDE.md
 ROLE_BASED_SYSTEM.md
 TASK_COMPLETION.md
 ARCHITECTURE.md
+PDF_ARCHITECTURE_DIAGRAM.txt
+PDF_GENERATION_GUIDE.md
+PDF_IMPLEMENTATION_SUMMARY.md
+QUICK_START_PDF.md
 
 # Session data
 sessions/
 *.session
+
+# Temporary files
+*.tmp
+*.temp
+~*
+
+# PDF generation temp files
+*.pdf~
+qr_temp/
+
+# Python cache
+.pytest_cache/
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Jupyter Notebook
+.ipynb_checkpoints/
+*.ipynb
+
+# Package manager
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+.tox/
+.nox/
+.hypothesis/
+pytest_debug.log
+
+# Translations
+*.mo
+
+# Django migrations (optional - comment out if you want to track them)
+# **/migrations/*.py
+# !**/migrations/__init__.py
+
+# Local development
+*.local
+.vscode/settings.json
+
+# Database backups
+*.dump
+*.sql.gz
+
+# Node modules (if using any frontend tools)
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Certificate files
+*.pem
+*.key
+*.crt

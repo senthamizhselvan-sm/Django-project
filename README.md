@@ -30,7 +30,8 @@ This system enables technicians to upload medical imaging scans (X-rays, CT, MRI
 - **Backend**: Django 4.2.16
 - **Database**: MongoDB
 - **Authentication**: Custom authentication with bcrypt
-- **Frontend**: HTML5, CSS3 (Responsive Design)
+- **Frontend**: HTML5, CSS3, Bootstrap 5
+- **PDF Generation**: ReportLab, qrcode, Pillow
 - **Python Version**: 3.13
 
 ## 📦 Installation & Setup
@@ -54,7 +55,7 @@ This system enables technicians to upload medical imaging scans (X-rays, CT, MRI
 
 3. **Install dependencies** (Already installed)
    ```bash
-   pip install django pymongo bcrypt
+   pip install django pymongo bcrypt reportlab qrcode[pil] pillow
    ```
 
 4. **Start MongoDB**
@@ -92,6 +93,7 @@ This system enables technicians to upload medical imaging scans (X-rays, CT, MRI
 | `/technician/upload/` | Upload scan form | Technician only |
 | `/technician/scans/` | View all scans | Technician only |
 | `/technician/scan/<id>/` | View scan details | Technician only |
+| `/generate-pdf/<id>/` | Generate & download PDF report | Radiologist & Technician |
 
 ## 📁 Project Structure
 
@@ -216,6 +218,19 @@ Django-project/
   - Query parameters support: `?scan_type=CT&name=john&from_date=2025-01-01&to_date=2025-12-31`
   - Clear filters functionality
   - Results summary with count
+- **PDF Report Generation**:
+  - Professional PDF reports with ReportLab
+  - Hospital branding with header and logo
+  - Complete patient demographics
+  - Scan type and date information
+  - Radiologist's detailed report
+  - AI analysis results (when available)
+  - Digital signature section
+  - QR code for report verification
+  - Automatic file naming: `report_<patient>_<scanid>.pdf`
+  - Storage in `/media/reports/` directory
+  - Download button in completed reports view
+  - Role-based access (Radiologist & Technician only)
 
 ### 🔜 Phase 3: AI Integration (Next Steps)
 - ML model integration

@@ -4,9 +4,25 @@ Views for user authentication and pages
 from django.shortcuts import render, redirect
 from django.contrib import messages
 from django.views.decorators.http import require_http_methods
+from django.http import FileResponse, HttpResponse
+from django.conf import settings
 from functools import wraps
 import bcrypt
 from .mongodb import MongoDB
+import os
+from datetime import datetime
+from bson import ObjectId
+from io import BytesIO
+import qrcode
+
+# ReportLab imports for PDF generation
+from reportlab.lib.pagesizes import letter, A4
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.units import inch
+from reportlab.lib import colors
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image
+from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
+from reportlab.pdfgen import canvas
 
 
 def role_required(allowed_roles):
@@ -477,5 +493,266 @@ def view_scan_detail(request, scan_id):
     """View scan detail - placeholder"""
     messages.info(request, f'View scan detail feature coming soon! (Scan ID: {scan_id})')
     return redirect('technician_dashboard')
+
+
+@role_required(['radiologist', 'technician'])
+def generate_pdf(request, scan_id):
+    """
+    Generate PDF report for completed radiology scan
+    Accessible to both Radiologist and Technician roles
+    """
+    try:
+        # Get scan from MongoDB
+        scans_collection = MongoDB.get_scans_collection()
+        scan = scans_collection.find_one({'_id': ObjectId(scan_id)})
+        
+        if not scan:
+            messages.error(request, 'Scan not found.')
+            return redirect('radiologist_dashboard' if request.session.get('user_role') == 'radiologist' else 'technician_dashboard')
+        
+        # Check if scan is completed
+        if scan.get('status') != 'Completed':
+            messages.warning(request, 'PDF can only be generated for completed reports.')
+            return redirect('radiologist_dashboard' if request.session.get('user_role') == 'radiologist' else 'technician_dashboard')
+        
+        # Prepare file paths
+        patient_name = scan.get('patient_name', 'Unknown').replace(' ', '_')
+        pdf_filename = f"report_{patient_name}_{scan_id}.pdf"
+        pdf_dir = os.path.join(settings.MEDIA_ROOT, 'reports')
+        pdf_path = os.path.join(pdf_dir, pdf_filename)
+        
+        # Ensure reports directory exists
+        os.makedirs(pdf_dir, exist_ok=True)
+        
+        # Create PDF buffer
+        buffer = BytesIO()
+        
+        # Create PDF document
+        doc = SimpleDocTemplate(buffer, pagesize=A4,
+                              rightMargin=0.75*inch, leftMargin=0.75*inch,
+                              topMargin=1*inch, bottomMargin=0.75*inch)
+        
+        # Container for the 'Flowable' objects
+        elements = []
+        
+        # Define styles
+        styles = getSampleStyleSheet()
+        title_style = ParagraphStyle(
+            'CustomTitle',
+            parent=styles['Heading1'],
+            fontSize=24,
+            textColor=colors.HexColor('#6f42c1'),
+            spaceAfter=12,
+            alignment=TA_CENTER,
+            fontName='Helvetica-Bold'
+        )
+        
+        heading_style = ParagraphStyle(
+            'CustomHeading',
+            parent=styles['Heading2'],
+            fontSize=14,
+            textColor=colors.HexColor('#6f42c1'),
+            spaceAfter=10,
+            spaceBefore=10,
+            fontName='Helvetica-Bold'
+        )
+        
+        normal_style = ParagraphStyle(
+            'CustomNormal',
+            parent=styles['Normal'],
+            fontSize=11,
+            spaceAfter=6,
+            fontName='Helvetica'
+        )
+        
+        # Add Hospital Header
+        elements.append(Paragraph("<b>🏥 AI-ASSISTED RADIOLOGY REPORTING SYSTEM</b>", title_style))
+        elements.append(Paragraph("<i>Advanced Diagnostic Imaging Center</i>", 
+                                ParagraphStyle('Subtitle', parent=styles['Normal'], 
+                                             fontSize=12, alignment=TA_CENTER, 
+                                             textColor=colors.grey, spaceAfter=20)))
+        elements.append(Spacer(1, 0.3*inch))
+        
+        # Add horizontal line
+        elements.append(Table([['']], colWidths=[6.5*inch], 
+                             style=TableStyle([('LINEABOVE', (0,0), (-1,-1), 2, colors.HexColor('#6f42c1'))])))
+        elements.append(Spacer(1, 0.2*inch))
+        
+        # Patient Information Section
+        elements.append(Paragraph("PATIENT INFORMATION", heading_style))
+        
+        patient_data = [
+            ['Patient Name:', scan.get('patient_name', 'N/A'), 'Patient ID:', scan.get('patient_id', 'N/A')],
+            ['Age:', str(scan.get('age', 'N/A')), 'Gender:', scan.get('gender', 'N/A')],
+            ['Scan Type:', scan.get('scan_type', 'N/A'), 'Status:', scan.get('status', 'N/A')]
+        ]
+        
+        patient_table = Table(patient_data, colWidths=[1.5*inch, 1.75*inch, 1.5*inch, 1.75*inch])
+        patient_table.setStyle(TableStyle([
+            ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'),
+            ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
+            ('FONTNAME', (2, 0), (2, -1), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, -1), 10),
+            ('TEXTCOLOR', (0, 0), (0, -1), colors.HexColor('#6f42c1')),
+            ('TEXTCOLOR', (2, 0), (2, -1), colors.HexColor('#6f42c1')),
+            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+            ('TOPPADDING', (0, 0), (-1, -1), 8),
+        ]))
+        elements.append(patient_table)
+        elements.append(Spacer(1, 0.2*inch))
+        
+        # Date Information
+        upload_date = scan.get('uploaded_at', datetime.now())
+        review_date = scan.get('reviewed_at', datetime.now())
+        
+        date_data = [
+            ['Scan Upload Date:', upload_date.strftime('%B %d, %Y at %I:%M %p') if isinstance(upload_date, datetime) else str(upload_date)],
+            ['Report Completion Date:', review_date.strftime('%B %d, %Y at %I:%M %p') if isinstance(review_date, datetime) else str(review_date)]
+        ]
+        
+        date_table = Table(date_data, colWidths=[2*inch, 4.5*inch])
+        date_table.setStyle(TableStyle([
+            ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, -1), 10),
+            ('TEXTCOLOR', (0, 0), (0, -1), colors.HexColor('#6f42c1')),
+            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+        ]))
+        elements.append(date_table)
+        elements.append(Spacer(1, 0.3*inch))
+        
+        # Radiologist Report Section
+        elements.append(Paragraph("RADIOLOGIST REPORT", heading_style))
+        
+        report_content = scan.get('radiologist_report', 'No report available.')
+        report_text = Paragraph(report_content, normal_style)
+        
+        report_table = Table([[report_text]], colWidths=[6.5*inch])
+        report_table.setStyle(TableStyle([
+            ('BOX', (0, 0), (-1, -1), 1, colors.grey),
+            ('BACKGROUND', (0, 0), (-1, -1), colors.beige),
+            ('PADDING', (0, 0), (-1, -1), 12),
+            ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+        ]))
+        elements.append(report_table)
+        elements.append(Spacer(1, 0.3*inch))
+        
+        # AI Prediction Section (if available)
+        if scan.get('ai_prediction'):
+            elements.append(Paragraph("AI ANALYSIS", heading_style))
+            ai_data = [
+                ['AI Prediction:', scan.get('ai_prediction', 'N/A')],
+                ['Confidence Score:', f"{scan.get('ai_confidence', 'N/A')}%" if scan.get('ai_confidence') else 'N/A']
+            ]
+            ai_table = Table(ai_data, colWidths=[2*inch, 4.5*inch])
+            ai_table.setStyle(TableStyle([
+                ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
+                ('FONTSIZE', (0, 0), (-1, -1), 10),
+                ('TEXTCOLOR', (0, 0), (0, -1), colors.HexColor('#6f42c1')),
+                ('BACKGROUND', (0, 0), (-1, -1), colors.lightblue),
+                ('PADDING', (0, 0), (-1, -1), 8),
+            ]))
+            elements.append(ai_table)
+            elements.append(Spacer(1, 0.2*inch))
+        
+        # Radiologist Information
+        elements.append(Spacer(1, 0.2*inch))
+        radiologist_name = scan.get('reviewed_by', 'N/A')
+        
+        radiologist_data = [
+            ['Reviewed By:', f"Dr. {radiologist_name}"],
+            ['Role:', 'Radiologist'],
+        ]
+        
+        radiologist_table = Table(radiologist_data, colWidths=[2*inch, 4.5*inch])
+        radiologist_table.setStyle(TableStyle([
+            ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, -1), 10),
+            ('TEXTCOLOR', (0, 0), (0, -1), colors.HexColor('#6f42c1')),
+            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+        ]))
+        elements.append(radiologist_table)
+        
+        # Digital Signature Section
+        elements.append(Spacer(1, 0.2*inch))
+        elements.append(Paragraph("__________________________", 
+                                ParagraphStyle('Signature', parent=styles['Normal'], 
+                                             fontSize=10, alignment=TA_LEFT)))
+        elements.append(Paragraph("<i>Digital Signature</i>", 
+                                ParagraphStyle('SigText', parent=styles['Normal'], 
+                                             fontSize=9, alignment=TA_LEFT, 
+                                             textColor=colors.grey)))
+        
+        # Generate QR Code for verification
+        elements.append(Spacer(1, 0.3*inch))
+        
+        # Create QR code with scan verification URL
+        verification_url = f"{request.build_absolute_uri('/')[:-1]}/radiologist/analyze/{scan_id}/"
+        qr = qrcode.QRCode(version=1, box_size=10, border=2)
+        qr.add_data(verification_url)
+        qr.make(fit=True)
+        qr_img = qr.make_image(fill_color="black", back_color="white")
+        
+        # Save QR code to buffer
+        qr_buffer = BytesIO()
+        qr_img.save(qr_buffer, format='PNG')
+        qr_buffer.seek(0)
+        
+        # Add QR code to PDF
+        qr_image = Image(qr_buffer, width=1.2*inch, height=1.2*inch)
+        
+        qr_data = [
+            [qr_image, Paragraph("<b>Scan Verification QR Code</b><br/><i>Scan to verify report authenticity</i>", 
+                               ParagraphStyle('QRText', parent=styles['Normal'], 
+                                            fontSize=9, alignment=TA_LEFT))]
+        ]
+        
+        qr_table = Table(qr_data, colWidths=[1.5*inch, 5*inch])
+        qr_table.setStyle(TableStyle([
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+            ('ALIGN', (0, 0), (0, 0), 'CENTER'),
+        ]))
+        elements.append(qr_table)
+        
+        # Footer
+        elements.append(Spacer(1, 0.3*inch))
+        elements.append(Table([['']], colWidths=[6.5*inch], 
+                             style=TableStyle([('LINEABOVE', (0,0), (-1,-1), 1, colors.grey)])))
+        elements.append(Paragraph(
+            f"<i>Report generated on {datetime.now().strftime('%B %d, %Y at %I:%M %p')} | Document ID: {scan_id}</i>",
+            ParagraphStyle('Footer', parent=styles['Normal'], 
+                         fontSize=8, alignment=TA_CENTER, 
+                         textColor=colors.grey, spaceAfter=10)
+        ))
+        
+        # Build PDF
+        doc.build(elements)
+        
+        # Save PDF to file
+        buffer.seek(0)
+        with open(pdf_path, 'wb') as f:
+            f.write(buffer.read())
+        
+        # Update MongoDB with PDF path
+        relative_pdf_path = f"reports/{pdf_filename}"
+        scans_collection.update_one(
+            {'_id': ObjectId(scan_id)},
+            {'$set': {'pdf_path': relative_pdf_path}}
+        )
+        
+        # Return PDF as download response
+        buffer.seek(0)
+        response = FileResponse(buffer, as_attachment=True, filename=pdf_filename)
+        response['Content-Type'] = 'application/pdf'
+        
+        messages.success(request, f'PDF report generated successfully: {pdf_filename}')
+        return response
+        
+    except Exception as e:
+        messages.error(request, f'Error generating PDF: {str(e)}')
+        return redirect('radiologist_dashboard' if request.session.get('user_role') == 'radiologist' else 'technician_dashboard')
 
 

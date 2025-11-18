@@ -130,10 +130,18 @@
                 <div class="card-body">
                     {% if scan.status == 'Completed' and scan.radiologist_report %}
                         <!-- Show existing report if already completed -->
-                        <div class="alert alert-success">
-                            <i class="bi bi-check-circle-fill"></i> <strong>Report Already Submitted</strong>
+                        <div class="alert alert-success d-flex justify-content-between align-items-center">
+                            <div>
+                                <i class="bi bi-check-circle-fill"></i> <strong>Report Already Submitted</strong>
+                            </div>
+                            <a href="{% url 'generate_pdf' scan.id %}" class="btn btn-danger btn-sm">
+                                <i class="bi bi-file-pdf-fill"></i> Download PDF Report
+                            </a>
                         </div>
                         <div class="border rounded p-3 bg-light">
+                            <p class="mb-2"><strong><i class="bi bi-person-badge"></i> Reviewed By:</strong> Dr. {{ scan.reviewed_by }}</p>
+                            <p class="mb-2"><strong><i class="bi bi-calendar-check"></i> Review Date:</strong> {{ scan.reviewed_at }}</p>
+                            <hr>
                             <p class="mb-0">{{ scan.radiologist_report }}</p>
                         </div>
                     {% else %}

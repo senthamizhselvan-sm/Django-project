@@ -18,6 +18,9 @@ urlpatterns = [
     path('radiologist/reports/', views.view_completed_reports, name='view_completed_reports'),
     path('radiologist/pending/', views.view_pending_scans, name='view_pending_scans'),
     
+    # PDF Generation route (accessible to both roles)
+    path('generate-pdf/<str:scan_id>/', views.generate_pdf, name='generate_pdf'),
+    
     # Technician routes
     path('technician/dashboard/', views.technician_dashboard, name='technician_dashboard'),
     path('technician/upload/', views.upload_scan, name='upload_scan'),

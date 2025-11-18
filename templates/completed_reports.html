@@ -140,9 +140,14 @@
                                         </span>
                                     </td>
                                     <td>
-                                        <a href="{% url 'analyze_scan' scan.id %}" class="btn btn-sm btn-outline-primary">
-                                            <i class="bi bi-eye"></i> View Details
-                                        </a>
+                                        <div class="btn-group" role="group">
+                                            <a href="{% url 'analyze_scan' scan.id %}" class="btn btn-sm btn-outline-primary" title="View Details">
+                                                <i class="bi bi-eye"></i> View
+                                            </a>
+                                            <a href="{% url 'generate_pdf' scan.id %}" class="btn btn-sm btn-outline-danger" title="Download PDF Report">
+                                                <i class="bi bi-file-pdf-fill"></i> PDF
+                                            </a>
+                                        </div>
                                     </td>
                                 </tr>
                                 {% endfor %}
