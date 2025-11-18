@@ -118,6 +118,10 @@ USE_TZ = True
 STATIC_URL = 'static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 
+# Media files (Uploaded files)
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
+
 # MongoDB Configuration
 MONGO_URI = 'mongodb://localhost:27017/'
 MONGO_DB_NAME = 'radiology_db'

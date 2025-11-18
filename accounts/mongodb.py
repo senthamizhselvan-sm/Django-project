@@ -30,3 +30,9 @@ class MongoDB:
         """Get users collection"""
         db = cls.get_database()
         return db['users']
+    
+    @classmethod
+    def get_scans_collection(cls):
+        """Get scans collection"""
+        db = cls.get_database()
+        return db['scans']

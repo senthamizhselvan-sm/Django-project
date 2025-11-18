@@ -8,13 +8,17 @@ This system enables technicians to upload medical imaging scans (X-rays, CT, MRI
 
 ### Key Features
 - ✅ User Registration & Login with MongoDB
+- ✅ Role-based authentication (Radiologist & Technician)
 - ✅ Secure password hashing with bcrypt
 - ✅ Session-based authentication
-- ✅ Responsive static website with modern UI
-- ✅ Dashboard for logged-in users
-- 🔜 Image upload functionality (Coming Soon)
+- ✅ Responsive dashboards with Bootstrap 5
+- ✅ **Image Upload System** for Technicians
+- ✅ **Scan Review System** for Radiologists
+- ✅ **Report Submission & Management**
+- ✅ **MongoDB Scans Collection** for storing scan metadata
+- ✅ **File Storage System** in /media/scans/
 - 🔜 AI model integration (Coming Soon)
-- 🔜 Report generation & review (Coming Soon)
+- 🔜 AI prediction & confidence scoring (Coming Soon)
 
 ## 🎯 Target Users
 - **Radiologists**: Review and finalize AI-generated reports
@@ -73,13 +77,21 @@ This system enables technicians to upload medical imaging scans (X-rays, CT, MRI
 
 ## 🌐 Application Routes
 
-| Route | Description |
-|-------|-------------|
-| `/` | Home page with feature overview |
-| `/register/` | User registration page |
-| `/login/` | User login page |
-| `/dashboard/` | Dashboard (requires authentication) |
-| `/logout/` | Logout and clear session |
+| Route | Description | Access |
+|-------|-------------|--------|
+| `/` | Home page with feature overview | Public |
+| `/register/` | User registration page | Public |
+| `/login/` | User login page | Public |
+| `/dashboard/` | Generic dashboard | Authenticated |
+| `/logout/` | Logout and clear session | Authenticated |
+| `/radiologist/dashboard/` | Radiologist dashboard | Radiologist only |
+| `/radiologist/analyze/<id>/` | Analyze scan | Radiologist only |
+| `/radiologist/reports/` | View completed reports | Radiologist only |
+| `/radiologist/pending/` | View pending scans | Radiologist only |
+| `/technician/dashboard/` | Technician dashboard | Technician only |
+| `/technician/upload/` | Upload scan form | Technician only |
+| `/technician/scans/` | View all scans | Technician only |
+| `/technician/scan/<id>/` | View scan details | Technician only |
 
 ## 📁 Project Structure
 
@@ -121,28 +133,84 @@ Django-project/
   "_id": "ObjectId",
   "full_name": "string",
   "email": "string (unique, lowercase)",
+  "role": "string (radiologist/technician)",
   "password": "string (bcrypt hashed)"
+}
+```
+
+### Scans Collection
+```json
+{
+  "_id": "ObjectId",
+  "patient_name": "string",
+  "patient_id": "string (alphanumeric)",
+  "age": "number",
+  "gender": "string (Male/Female/Other)",
+  "scan_type": "string (X-Ray/CT Scan/MRI/Ultrasound)",
+  "scan_file_path": "string (media/scans/filename)",
+  "uploaded_by": "string (technician email)",
+  "status": "string (Pending Analysis/Under Review/Completed)",
+  "uploaded_at": "datetime",
+  "radiologist_report": "string (optional)",
+  "reviewed_by": "string (radiologist email, optional)",
+  "reviewed_at": "datetime (optional)",
+  "ai_prediction": "string (optional)",
+  "ai_confidence": "number (optional, 0-100)"
 }
 ```
 
 ## 🎨 Features Implemented
 
-### ✅ Phase 1: Static Website + Authentication (Current)
+### ✅ Phase 1: Authentication & Role-Based Access
 - Landing page with feature showcase
-- User registration with validation
+- User registration with role selection (Radiologist/Technician)
 - User login with MongoDB authentication
-- Session management
-- Dashboard with system overview
+- Session management with role tracking
+- Separate dashboards for each role
+- Role-based navigation and access control
 - Logout functionality
-- Responsive navigation bar
-- Professional UI/UX design
+- Professional UI/UX with Bootstrap 5
 
-### 🔜 Phase 2: Image Upload & Processing (Next Steps)
-- Medical image upload (X-ray, CT, MRI)
-- Image storage system
-- Patient record management
+### ✅ Phase 2: Image Upload & Scan Review (Current)
 
-### 🔜 Phase 3: AI Integration
+**Technician Features:**
+- **Upload Scan Form** with comprehensive fields:
+  - Patient Name, Patient ID, Age, Gender
+  - Scan Type selection (X-Ray, CT, MRI, Ultrasound)
+  - File upload with validation (JPG, PNG, JPEG, DICOM)
+- **File Storage System**:
+  - Automatic directory creation
+  - Unique filename generation (patient_id_timestamp)
+  - Files stored in `/media/scans/`
+- **MongoDB Integration**:
+  - Scans collection for metadata storage
+  - Track uploaded_by (technician email)
+  - Status tracking (Pending/Under Review/Completed)
+- **Technician Dashboard**:
+  - Real-time stats (Total Uploads, Pending, Under Review, Completed)
+  - List of uploaded scans with patient info
+  - Status badges for visual tracking
+
+**Radiologist Features:**
+- **Scan Review Dashboard**:
+  - View all pending scans requiring analysis
+  - Real-time stats (Pending, Under Review, Completed)
+  - Recently completed reports section
+- **Scan Detail View** (`view_scan.html`):
+  - Complete patient information display
+  - Medical scan image preview
+  - AI prediction results (when available)
+  - AI confidence score visualization
+- **Report Submission**:
+  - Rich text area for detailed radiological findings
+  - Submit report and auto-update status to "Completed"
+  - Track reviewed_by and reviewed_at timestamps
+- **Completed Reports List**:
+  - View all finalized reports
+  - Filter by patient, date, or scan type
+  - Access to submitted reports for review
+
+### 🔜 Phase 3: AI Integration (Next Steps)
 - ML model integration
 - Automated report generation
 - Confidence score calculation

@@ -14,7 +14,7 @@ urlpatterns = [
     
     # Radiologist routes
     path('radiologist/dashboard/', views.radiologist_dashboard, name='radiologist_dashboard'),
-    path('radiologist/analyze/<int:scan_id>/', views.analyze_scan, name='analyze_scan'),
+    path('radiologist/analyze/<str:scan_id>/', views.analyze_scan, name='analyze_scan'),
     path('radiologist/reports/', views.view_completed_reports, name='view_completed_reports'),
     path('radiologist/pending/', views.view_pending_scans, name='view_pending_scans'),
     
@@ -22,5 +22,5 @@ urlpatterns = [
     path('technician/dashboard/', views.technician_dashboard, name='technician_dashboard'),
     path('technician/upload/', views.upload_scan, name='upload_scan'),
     path('technician/scans/', views.view_scans, name='view_scans'),
-    path('technician/scan/<int:scan_id>/', views.view_scan_detail, name='view_scan_detail'),
+    path('technician/scan/<str:scan_id>/', views.view_scan_detail, name='view_scan_detail'),
 ]

@@ -156,34 +156,47 @@ def logout(request):
 @role_required(['radiologist'])
 def radiologist_dashboard(request):
     """Radiologist dashboard view"""
-    # Sample data - will be replaced with real database queries later
-    pending_scans = [
-        {
-            'id': 1,
-            'patient_name': 'John Doe',
-            'scan_type': 'X-Ray - Chest',
-            'uploaded_date': '2025-11-14',
-            'status': 'Pending Analysis'
-        },
-        {
-            'id': 2,
-            'patient_name': 'Jane Smith',
-            'scan_type': 'CT Scan - Brain',
-            'uploaded_date': '2025-11-13',
-            'status': 'Pending Analysis'
-        },
-        {
-            'id': 3,
-            'patient_name': 'Robert Johnson',
-            'scan_type': 'MRI - Spine',
-            'uploaded_date': '2025-11-12',
-            'status': 'Pending Analysis'
-        },
-    ]
+    # Get all scans from MongoDB
+    scans_collection = MongoDB.get_scans_collection()
+    
+    # Query pending scans
+    pending_cursor = scans_collection.find({'status': 'Pending Analysis'}).sort('uploaded_at', -1)
+    pending_scans = []
+    for scan in pending_cursor:
+        pending_scans.append({
+            'id': str(scan['_id']),
+            'patient_name': scan['patient_name'],
+            'patient_id': scan.get('patient_id', 'N/A'),
+            'scan_type': scan['scan_type'],
+            'uploaded_date': scan['uploaded_at'].strftime('%Y-%m-%d') if hasattr(scan['uploaded_at'], 'strftime') else str(scan['uploaded_at']),
+            'status': scan['status']
+        })
+    
+    # Query completed scans
+    completed_cursor = scans_collection.find({'status': 'Completed'}).sort('uploaded_at', -1).limit(5)
+    completed_scans = []
+    for scan in completed_cursor:
+        completed_scans.append({
+            'id': str(scan['_id']),
+            'patient_name': scan['patient_name'],
+            'patient_id': scan.get('patient_id', 'N/A'),
+            'scan_type': scan['scan_type'],
+            'uploaded_date': scan['uploaded_at'].strftime('%Y-%m-%d') if hasattr(scan['uploaded_at'], 'strftime') else str(scan['uploaded_at']),
+            'status': scan['status']
+        })
+    
+    # Calculate stats
+    total_pending = len(pending_scans)
+    total_completed = scans_collection.count_documents({'status': 'Completed'})
+    total_under_review = scans_collection.count_documents({'status': 'Under Review'})
     
     context = {
         'user_name': request.session.get('user_name', 'Radiologist'),
         'pending_scans': pending_scans,
+        'completed_scans': completed_scans,
+        'total_pending': total_pending,
+        'total_completed': total_completed,
+        'total_under_review': total_under_review,
     }
     return render(request, 'radiologist_dashboard.html', context)
 
@@ -191,63 +204,208 @@ def radiologist_dashboard(request):
 @role_required(['technician'])
 def technician_dashboard(request):
     """Technician dashboard view"""
-    # Sample data - will be replaced with real database queries later
-    uploaded_scans = [
-        {
-            'id': 1,
-            'patient_name': 'John Doe',
-            'scan_type': 'X-Ray - Chest',
-            'uploaded_date': '2025-11-14',
-            'status': 'Pending Analysis'
-        },
-        {
-            'id': 2,
-            'patient_name': 'Jane Smith',
-            'scan_type': 'CT Scan - Brain',
-            'uploaded_date': '2025-11-13',
-            'status': 'Under Review'
-        },
-        {
-            'id': 3,
-            'patient_name': 'Robert Johnson',
-            'scan_type': 'MRI - Spine',
-            'uploaded_date': '2025-11-12',
-            'status': 'Completed'
-        },
-    ]
+    # Get scans from MongoDB uploaded by current user
+    scans_collection = MongoDB.get_scans_collection()
+    user_email = request.session.get('user_email')
+    
+    # Query scans uploaded by this technician
+    scans_cursor = scans_collection.find({'uploaded_by': user_email}).sort('uploaded_at', -1)
+    
+    uploaded_scans = []
+    for scan in scans_cursor:
+        uploaded_scans.append({
+            'id': str(scan['_id']),
+            'patient_name': scan['patient_name'],
+            'patient_id': scan.get('patient_id', 'N/A'),
+            'scan_type': scan['scan_type'],
+            'uploaded_date': scan['uploaded_at'].strftime('%Y-%m-%d') if hasattr(scan['uploaded_at'], 'strftime') else str(scan['uploaded_at']),
+            'status': scan['status']
+        })
+    
+    # Calculate stats
+    total_uploads = len(uploaded_scans)
+    pending = sum(1 for s in uploaded_scans if s['status'] == 'Pending Analysis')
+    under_review = sum(1 for s in uploaded_scans if s['status'] == 'Under Review')
+    completed = sum(1 for s in uploaded_scans if s['status'] == 'Completed')
     
     context = {
         'user_name': request.session.get('user_name', 'Technician'),
         'uploaded_scans': uploaded_scans,
+        'total_uploads': total_uploads,
+        'pending': pending,
+        'under_review': under_review,
+        'completed': completed,
     }
     return render(request, 'technician_dashboard.html', context)
 
 
 @role_required(['radiologist'])
 def analyze_scan(request, scan_id):
-    """Analyze scan view - placeholder"""
-    messages.info(request, f'Analyze scan feature coming soon! (Scan ID: {scan_id})')
-    return redirect('radiologist_dashboard')
+    """Analyze scan view - display scan details and allow report submission"""
+    from bson.objectid import ObjectId
+    
+    scans_collection = MongoDB.get_scans_collection()
+    
+    # Get scan from MongoDB
+    try:
+        scan = scans_collection.find_one({'_id': ObjectId(scan_id)})
+    except:
+        messages.error(request, 'Invalid scan ID!')
+        return redirect('radiologist_dashboard')
+    
+    if not scan:
+        messages.error(request, 'Scan not found!')
+        return redirect('radiologist_dashboard')
+    
+    # Handle POST request - submit report
+    if request.method == 'POST':
+        report_text = request.POST.get('report_text', '').strip()
+        
+        if not report_text:
+            messages.error(request, 'Report text is required!')
+        else:
+            from datetime import datetime
+            # Update scan with report and status
+            scans_collection.update_one(
+                {'_id': ObjectId(scan_id)},
+                {
+                    '$set': {
+                        'radiologist_report': report_text,
+                        'reviewed_by': request.session.get('user_email'),
+                        'reviewed_at': datetime.now(),
+                        'status': 'Completed'
+                    }
+                }
+            )
+            messages.success(request, f'Report submitted successfully for patient {scan["patient_name"]}!')
+            return redirect('radiologist_dashboard')
+    
+    # Prepare scan data for template
+    scan_data = {
+        'id': str(scan['_id']),
+        'patient_name': scan['patient_name'],
+        'patient_id': scan.get('patient_id', 'N/A'),
+        'age': scan.get('age', 'N/A'),
+        'gender': scan.get('gender', 'N/A'),
+        'scan_type': scan['scan_type'],
+        'scan_file_path': scan.get('scan_file_path', ''),
+        'uploaded_by': scan.get('uploaded_by', 'Unknown'),
+        'uploaded_at': scan['uploaded_at'].strftime('%Y-%m-%d %H:%M') if hasattr(scan['uploaded_at'], 'strftime') else str(scan['uploaded_at']),
+        'status': scan['status'],
+        'ai_prediction': scan.get('ai_prediction', None),
+        'ai_confidence': scan.get('ai_confidence', None),
+        'radiologist_report': scan.get('radiologist_report', ''),
+    }
+    
+    context = {
+        'scan': scan_data,
+    }
+    return render(request, 'view_scan.html', context)
 
 
 @role_required(['radiologist'])
 def view_completed_reports(request):
-    """View completed reports - placeholder"""
-    messages.info(request, 'View completed reports feature coming soon!')
-    return redirect('radiologist_dashboard')
+    """View completed reports"""
+    scans_collection = MongoDB.get_scans_collection()
+    
+    # Query completed scans
+    completed_cursor = scans_collection.find({'status': 'Completed'}).sort('reviewed_at', -1)
+    completed_scans = []
+    for scan in completed_cursor:
+        completed_scans.append({
+            'id': str(scan['_id']),
+            'patient_name': scan['patient_name'],
+            'patient_id': scan.get('patient_id', 'N/A'),
+            'scan_type': scan['scan_type'],
+            'uploaded_date': scan['uploaded_at'].strftime('%Y-%m-%d') if hasattr(scan['uploaded_at'], 'strftime') else str(scan['uploaded_at']),
+            'reviewed_date': scan.get('reviewed_at').strftime('%Y-%m-%d') if scan.get('reviewed_at') and hasattr(scan.get('reviewed_at'), 'strftime') else 'N/A',
+            'reviewed_by': scan.get('reviewed_by', 'Unknown'),
+            'status': scan['status']
+        })
+    
+    context = {
+        'completed_scans': completed_scans,
+    }
+    return render(request, 'completed_reports.html', context)
 
 
 @role_required(['radiologist'])
 def view_pending_scans(request):
-    """View pending scans - placeholder"""
+    """View pending scans - redirect to dashboard which shows pending scans"""
     return redirect('radiologist_dashboard')
 
 
 @role_required(['technician'])
 def upload_scan(request):
-    """Upload scan view - placeholder"""
-    messages.info(request, 'Upload scan feature coming soon!')
-    return redirect('technician_dashboard')
+    """Upload scan view"""
+    if request.method == 'POST':
+        # Get form data
+        patient_name = request.POST.get('patient_name', '').strip()
+        patient_id = request.POST.get('patient_id', '').strip()
+        age = request.POST.get('age', '').strip()
+        gender = request.POST.get('gender', '').strip()
+        scan_type = request.POST.get('scan_type', '').strip()
+        scan_file = request.FILES.get('scan_file')
+        
+        # Validation
+        if not all([patient_name, patient_id, age, gender, scan_type, scan_file]):
+            messages.error(request, 'All fields are required!')
+            return render(request, 'upload_scan.html')
+        
+        # Validate age
+        try:
+            age = int(age)
+            if age <= 0 or age > 150:
+                messages.error(request, 'Please enter a valid age!')
+                return render(request, 'upload_scan.html')
+        except ValueError:
+            messages.error(request, 'Age must be a number!')
+            return render(request, 'upload_scan.html')
+        
+        # Validate file extension
+        allowed_extensions = ['jpg', 'jpeg', 'png', 'dcm', 'dicom']
+        file_ext = scan_file.name.split('.')[-1].lower()
+        if file_ext not in allowed_extensions:
+            messages.error(request, 'Invalid file format! Allowed: JPG, PNG, JPEG, DICOM')
+            return render(request, 'upload_scan.html')
+        
+        # Create media/scans directory if it doesn't exist
+        import os
+        from django.conf import settings
+        from datetime import datetime
+        
+        scans_dir = os.path.join(settings.MEDIA_ROOT, 'scans')
+        os.makedirs(scans_dir, exist_ok=True)
+        
+        # Generate unique filename
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        filename = f"{patient_id}_{timestamp}.{file_ext}"
+        file_path = os.path.join(scans_dir, filename)
+        
+        # Save file
+        with open(file_path, 'wb+') as destination:
+            for chunk in scan_file.chunks():
+                destination.write(chunk)
+        
+        # Save to MongoDB
+        scans_collection = MongoDB.get_scans_collection()
+        scan_data = {
+            'patient_name': patient_name,
+            'patient_id': patient_id,
+            'age': age,
+            'gender': gender,
+            'scan_type': scan_type,
+            'scan_file_path': f'media/scans/{filename}',
+            'uploaded_by': request.session.get('user_email'),
+            'status': 'Pending Analysis',
+            'uploaded_at': datetime.now()
+        }
+        scans_collection.insert_one(scan_data)
+        
+        messages.success(request, f'Scan uploaded successfully for patient {patient_name}!')
+        return redirect('technician_dashboard')
+    
+    return render(request, 'upload_scan.html')
 
 
 @role_required(['technician'])
