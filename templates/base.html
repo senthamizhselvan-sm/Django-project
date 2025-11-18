@@ -31,7 +31,7 @@
                     {% elif request.session.user_role == 'technician' %}
                         <a href="{% url 'technician_dashboard' %}" class="nav-btn">Dashboard</a>
                         <a href="{% url 'upload_scan' %}" class="nav-btn">Upload Scan</a>
-                        <a href="{% url 'view_scans' %}" class="nav-btn">My Scans</a>
+                        <a href="{% url 'view_completed_reports' %}" class="nav-btn">Reports</a>
                     {% else %}
                         <a href="{% url 'dashboard' %}" class="nav-btn">Dashboard</a>
                     {% endif %}

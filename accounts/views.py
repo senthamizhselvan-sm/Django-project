@@ -303,28 +303,86 @@ def analyze_scan(request, scan_id):
     return render(request, 'view_scan.html', context)
 
 
-@role_required(['radiologist'])
+@role_required(['radiologist', 'technician'])
 def view_completed_reports(request):
-    """View completed reports"""
+    """View completed reports with filtering and pagination"""
+    from datetime import datetime, timedelta
+    from django.core.paginator import Paginator
+    
     scans_collection = MongoDB.get_scans_collection()
     
-    # Query completed scans
-    completed_cursor = scans_collection.find({'status': 'Completed'}).sort('reviewed_at', -1)
-    completed_scans = []
+    # Build query filter based on request parameters
+    query_filter = {'status': 'Completed'}
+    
+    # Filter by patient name (search)
+    patient_name = request.GET.get('name', '').strip()
+    if patient_name:
+        query_filter['patient_name'] = {'$regex': patient_name, '$options': 'i'}  # Case-insensitive search
+    
+    # Filter by scan type
+    scan_type = request.GET.get('scan_type', '').strip()
+    if scan_type:
+        query_filter['scan_type'] = scan_type
+    
+    # Filter by date range
+    from_date = request.GET.get('from_date', '').strip()
+    to_date = request.GET.get('to_date', '').strip()
+    
+    if from_date or to_date:
+        date_filter = {}
+        if from_date:
+            try:
+                date_filter['$gte'] = datetime.strptime(from_date, '%Y-%m-%d')
+            except ValueError:
+                pass
+        if to_date:
+            try:
+                # Add one day to include the entire end date
+                to_datetime = datetime.strptime(to_date, '%Y-%m-%d')
+                date_filter['$lte'] = to_datetime + timedelta(days=1)
+            except ValueError:
+                pass
+        if date_filter:
+            query_filter['uploaded_at'] = date_filter
+    
+    # Query completed scans with filters
+    completed_cursor = scans_collection.find(query_filter).sort('reviewed_at', -1)
+    
+    # Convert to list for pagination
+    all_completed_scans = []
     for scan in completed_cursor:
-        completed_scans.append({
+        all_completed_scans.append({
             'id': str(scan['_id']),
             'patient_name': scan['patient_name'],
             'patient_id': scan.get('patient_id', 'N/A'),
             'scan_type': scan['scan_type'],
             'uploaded_date': scan['uploaded_at'].strftime('%Y-%m-%d') if hasattr(scan['uploaded_at'], 'strftime') else str(scan['uploaded_at']),
-            'reviewed_date': scan.get('reviewed_at').strftime('%Y-%m-%d') if scan.get('reviewed_at') and hasattr(scan.get('reviewed_at'), 'strftime') else 'N/A',
+            'reviewed_date': scan.get('reviewed_at').strftime('%Y-%m-%d %H:%M') if scan.get('reviewed_at') and hasattr(scan.get('reviewed_at'), 'strftime') else 'N/A',
             'reviewed_by': scan.get('reviewed_by', 'Unknown'),
             'status': scan['status']
         })
     
+    # Pagination - 15 per page
+    paginator = Paginator(all_completed_scans, 15)
+    page_number = request.GET.get('page', 1)
+    page_obj = paginator.get_page(page_number)
+    
+    # Get unique scan types for filter dropdown
+    all_scan_types = scans_collection.distinct('scan_type')
+    
+    # Calculate statistics
+    total_completed = len(all_completed_scans)
+    
     context = {
-        'completed_scans': completed_scans,
+        'page_obj': page_obj,
+        'completed_scans': page_obj.object_list,
+        'all_scan_types': all_scan_types,
+        'total_completed': total_completed,
+        # Preserve filter values
+        'filter_name': patient_name,
+        'filter_scan_type': scan_type,
+        'filter_from_date': from_date,
+        'filter_to_date': to_date,
     }
     return render(request, 'completed_reports.html', context)
 

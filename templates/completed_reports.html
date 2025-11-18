@@ -7,19 +7,107 @@
     <div class="row">
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center mb-4">
-                <h2><i class="bi bi-file-earmark-check-fill text-success"></i> Completed Reports</h2>
-                <a href="{% url 'radiologist_dashboard' %}" class="btn btn-outline-secondary">
+                <h2><i class="bi bi-file-earmark-check-fill text-success"></i> Completed Reports History</h2>
+                <a href="{% if request.session.user_role == 'radiologist' %}{% url 'radiologist_dashboard' %}{% else %}{% url 'technician_dashboard' %}{% endif %}" class="btn btn-outline-secondary">
                     <i class="bi bi-arrow-left"></i> Back to Dashboard
                 </a>
             </div>
         </div>
     </div>
 
+    <!-- Filter/Search Form -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-funnel"></i> Filter Reports</h5>
+                </div>
+                <div class="card-body">
+                    <form method="GET" action="{% url 'view_completed_reports' %}" class="row g-3">
+                        <!-- Patient Name Search -->
+                        <div class="col-md-3">
+                            <label for="name" class="form-label">
+                                <i class="bi bi-search"></i> Patient Name
+                            </label>
+                            <input type="text" class="form-control" id="name" name="name" 
+                                   placeholder="Search by name..." value="{{ filter_name }}">
+                        </div>
+                        
+                        <!-- Scan Type Filter -->
+                        <div class="col-md-3">
+                            <label for="scan_type" class="form-label">
+                                <i class="bi bi-file-medical"></i> Scan Type
+                            </label>
+                            <select class="form-select" id="scan_type" name="scan_type">
+                                <option value="">All Types</option>
+                                {% for type in all_scan_types %}
+                                    <option value="{{ type }}" {% if filter_scan_type == type %}selected{% endif %}>
+                                        {{ type }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <!-- From Date -->
+                        <div class="col-md-2">
+                            <label for="from_date" class="form-label">
+                                <i class="bi bi-calendar"></i> From Date
+                            </label>
+                            <input type="date" class="form-control" id="from_date" name="from_date" 
+                                   value="{{ filter_from_date }}">
+                        </div>
+                        
+                        <!-- To Date -->
+                        <div class="col-md-2">
+                            <label for="to_date" class="form-label">
+                                <i class="bi bi-calendar-check"></i> To Date
+                            </label>
+                            <input type="date" class="form-control" id="to_date" name="to_date" 
+                                   value="{{ filter_to_date }}">
+                        </div>
+                        
+                        <!-- Buttons -->
+                        <div class="col-md-2 d-flex align-items-end">
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="bi bi-filter"></i> Apply Filter
+                            </button>
+                        </div>
+                    </form>
+                    
+                    <!-- Clear Filter Button -->
+                    {% if filter_name or filter_scan_type or filter_from_date or filter_to_date %}
+                    <div class="row mt-2">
+                        <div class="col-12 text-end">
+                            <a href="{% url 'view_completed_reports' %}" class="btn btn-sm btn-outline-secondary">
+                                <i class="bi bi-x-circle"></i> Clear Filters
+                            </a>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Results Summary -->
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle"></i> 
+                <strong>{{ total_completed }}</strong> completed report(s) found
+                {% if filter_name or filter_scan_type or filter_from_date or filter_to_date %}
+                    (filtered)
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Results Table -->
     <div class="row">
         <div class="col-12">
             <div class="card shadow">
                 <div class="card-header bg-success text-white">
-                    <h4 class="mb-0"><i class="bi bi-list-check"></i> All Completed Scan Reports</h4>
+                    <h4 class="mb-0"><i class="bi bi-list-check"></i> Completed Scan Reports</h4>
                 </div>
                 <div class="card-body">
                     {% if completed_scans %}
@@ -30,8 +118,8 @@
                                     <th>Patient ID</th>
                                     <th>Patient Name</th>
                                     <th>Scan Type</th>
-                                    <th>Uploaded Date</th>
-                                    <th>Reviewed Date</th>
+                                    <th>Upload Date</th>
+                                    <th>Review Date</th>
                                     <th>Reviewed By</th>
                                     <th>Status</th>
                                     <th>Action</th>
@@ -42,9 +130,9 @@
                                 <tr>
                                     <td><span class="badge bg-secondary">{{ scan.patient_id }}</span></td>
                                     <td><i class="bi bi-person-fill text-secondary"></i> {{ scan.patient_name }}</td>
-                                    <td>{{ scan.scan_type }}</td>
+                                    <td><span class="badge bg-info">{{ scan.scan_type }}</span></td>
                                     <td>{{ scan.uploaded_date }}</td>
-                                    <td>{{ scan.reviewed_date }}</td>
+                                    <td><small class="text-muted">{{ scan.reviewed_date }}</small></td>
                                     <td><small class="text-muted">{{ scan.reviewed_by }}</small></td>
                                     <td>
                                         <span class="badge bg-success">
@@ -53,7 +141,7 @@
                                     </td>
                                     <td>
                                         <a href="{% url 'analyze_scan' scan.id %}" class="btn btn-sm btn-outline-primary">
-                                            <i class="bi bi-eye"></i> View Report
+                                            <i class="bi bi-eye"></i> View Details
                                         </a>
                                     </td>
                                 </tr>
@@ -61,13 +149,74 @@
                             </tbody>
                         </table>
                     </div>
+                    
+                    <!-- Pagination -->
+                    {% if page_obj.has_other_pages %}
+                    <nav aria-label="Page navigation" class="mt-4">
+                        <ul class="pagination justify-content-center">
+                            <!-- Previous Page -->
+                            {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if filter_name %}&name={{ filter_name }}{% endif %}{% if filter_scan_type %}&scan_type={{ filter_scan_type }}{% endif %}{% if filter_from_date %}&from_date={{ filter_from_date }}{% endif %}{% if filter_to_date %}&to_date={{ filter_to_date }}{% endif %}">
+                                    <i class="bi bi-chevron-left"></i> Previous
+                                </a>
+                            </li>
+                            {% else %}
+                            <li class="page-item disabled">
+                                <span class="page-link"><i class="bi bi-chevron-left"></i> Previous</span>
+                            </li>
+                            {% endif %}
+                            
+                            <!-- Page Numbers -->
+                            {% for num in page_obj.paginator.page_range %}
+                                {% if page_obj.number == num %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ num }}</span>
+                                </li>
+                                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ num }}{% if filter_name %}&name={{ filter_name }}{% endif %}{% if filter_scan_type %}&scan_type={{ filter_scan_type }}{% endif %}{% if filter_from_date %}&from_date={{ filter_from_date }}{% endif %}{% if filter_to_date %}&to_date={{ filter_to_date }}{% endif %}">
+                                        {{ num }}
+                                    </a>
+                                </li>
+                                {% endif %}
+                            {% endfor %}
+                            
+                            <!-- Next Page -->
+                            {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if filter_name %}&name={{ filter_name }}{% endif %}{% if filter_scan_type %}&scan_type={{ filter_scan_type }}{% endif %}{% if filter_from_date %}&from_date={{ filter_from_date }}{% endif %}{% if filter_to_date %}&to_date={{ filter_to_date }}{% endif %}">
+                                    Next <i class="bi bi-chevron-right"></i>
+                                </a>
+                            </li>
+                            {% else %}
+                            <li class="page-item disabled">
+                                <span class="page-link">Next <i class="bi bi-chevron-right"></i></span>
+                            </li>
+                            {% endif %}
+                        </ul>
+                        
+                        <!-- Page Info -->
+                        <p class="text-center text-muted">
+                            Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }} 
+                            (Showing {{ page_obj.start_index }} - {{ page_obj.end_index }} of {{ total_completed }} reports)
+                        </p>
+                    </nav>
+                    {% endif %}
+                    
                     {% else %}
                     <div class="text-center py-5">
                         <i class="bi bi-inbox fs-1 text-muted"></i>
-                        <p class="text-muted mt-3">No completed reports yet.</p>
-                        <a href="{% url 'radiologist_dashboard' %}" class="btn btn-primary mt-2">
-                            <i class="bi bi-arrow-left"></i> Go to Dashboard
-                        </a>
+                        <p class="text-muted mt-3">No completed reports found.</p>
+                        {% if filter_name or filter_scan_type or filter_from_date or filter_to_date %}
+                            <a href="{% url 'view_completed_reports' %}" class="btn btn-primary mt-2">
+                                <i class="bi bi-x-circle"></i> Clear Filters
+                            </a>
+                        {% else %}
+                            <a href="{% if request.session.user_role == 'radiologist' %}{% url 'radiologist_dashboard' %}{% else %}{% url 'technician_dashboard' %}{% endif %}" class="btn btn-primary mt-2">
+                                <i class="bi bi-arrow-left"></i> Go to Dashboard
+                            </a>
+                        {% endif %}
                     </div>
                     {% endif %}
                 </div>
@@ -79,6 +228,17 @@
 <style>
 .card {
     border-radius: 15px;
+}
+
+.form-label {
+    font-weight: 600;
+    color: #2d3748;
+    font-size: 0.9rem;
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
 }
 
 .table th {
@@ -93,6 +253,19 @@
 .btn-outline-primary:hover {
     transform: translateY(-2px);
     box-shadow: 0 3px 10px rgba(0,0,0,0.15);
+}
+
+.pagination .page-link {
+    color: #667eea;
+}
+
+.pagination .page-item.active .page-link {
+    background-color: #667eea;
+    border-color: #667eea;
+}
+
+.pagination .page-link:hover {
+    color: #5568d3;
 }
 </style>
 {% endblock %}

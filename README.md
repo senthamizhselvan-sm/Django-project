@@ -207,8 +207,15 @@ Django-project/
   - Track reviewed_by and reviewed_at timestamps
 - **Completed Reports List**:
   - View all finalized reports
-  - Filter by patient, date, or scan type
-  - Access to submitted reports for review
+  - **Advanced Filtering**:
+    * Search by patient name (case-insensitive)
+    * Filter by scan type (X-Ray, CT, MRI, Ultrasound)
+    * Filter by date range (from/to dates)
+  - **Pagination** (15 reports per page)
+  - Access for both Radiologist and Technician roles
+  - Query parameters support: `?scan_type=CT&name=john&from_date=2025-01-01&to_date=2025-12-31`
+  - Clear filters functionality
+  - Results summary with count
 
 ### 🔜 Phase 3: AI Integration (Next Steps)
 - ML model integration
