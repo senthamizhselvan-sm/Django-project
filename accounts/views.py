@@ -4,16 +4,18 @@ Views for user authentication and pages
 from django.shortcuts import render, redirect
 from django.contrib import messages
 from django.views.decorators.http import require_http_methods
-from django.http import FileResponse, HttpResponse
+from django.http import FileResponse, HttpResponse, JsonResponse
 from django.conf import settings
 from functools import wraps
 import bcrypt
 from .mongodb import MongoDB
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 from bson import ObjectId
 from io import BytesIO
 import qrcode
+from collections import defaultdict, Counter
+import calendar
 
 # ReportLab imports for PDF generation
 from reportlab.lib.pagesizes import letter, A4
@@ -754,5 +756,303 @@ def generate_pdf(request, scan_id):
     except Exception as e:
         messages.error(request, f'Error generating PDF: {str(e)}')
         return redirect('radiologist_dashboard' if request.session.get('user_role') == 'radiologist' else 'technician_dashboard')
+
+
+# ============================================================================
+# ANALYTICS DASHBOARD VIEWS
+# ============================================================================
+
+@role_required(['radiologist', 'technician', 'admin'])
+def analytics_dashboard(request):
+    """
+    LeetCode-style analytics dashboard with comprehensive statistics
+    Accessible to all authenticated users (role-based data filtering)
+    """
+    try:
+        scans_collection = MongoDB.get_scans_collection()
+        users_collection = MongoDB.get_users_collection()
+        
+        user_role = request.session.get('user_role', '')
+        user_email = request.session.get('user_email', '')
+        
+        # Base query filter based on role
+        if user_role == 'technician':
+            base_filter = {'uploaded_by': user_email}
+        elif user_role == 'radiologist':
+            base_filter = {'$or': [{'reviewed_by': user_email}, {'status': 'Pending Analysis'}]}
+        else:  # admin
+            base_filter = {}
+        
+        # Get all scans for this user
+        all_scans = list(scans_collection.find(base_filter))
+        
+        # Add string ID to each scan for template rendering
+        for scan in all_scans:
+            scan['id'] = str(scan['_id'])
+        
+        # Calculate metrics
+        total_scans = len(all_scans)
+        completed_scans = len([s for s in all_scans if s.get('status') == 'Completed'])
+        pending_scans = len([s for s in all_scans if s.get('status') == 'Pending Analysis'])
+        under_review = len([s for s in all_scans if s.get('status') == 'Under Review'])
+        
+        # Calculate average processing time
+        processing_times = []
+        for scan in all_scans:
+            if scan.get('status') == 'Completed' and scan.get('reviewed_at') and scan.get('uploaded_at'):
+                upload_time = scan.get('uploaded_at')
+                review_time = scan.get('reviewed_at')
+                if isinstance(upload_time, datetime) and isinstance(review_time, datetime):
+                    delta = review_time - upload_time
+                    processing_times.append(delta.total_seconds() / 3600)  # hours
+        
+        avg_processing_time = sum(processing_times) / len(processing_times) if processing_times else 0
+        
+        # Get user stats
+        total_users = users_collection.count_documents({})
+        radiologists_count = users_collection.count_documents({'role': 'radiologist'})
+        technicians_count = users_collection.count_documents({'role': 'technician'})
+        
+        # Scan type distribution
+        scan_types = Counter([scan.get('scan_type', 'Unknown') for scan in all_scans])
+        
+        # Calculate badges/achievements
+        badges = []
+        if completed_scans >= 100:
+            badges.append({'name': '100 Reports Completed', 'icon': '🏆', 'color': 'gold'})
+        if completed_scans >= 50:
+            badges.append({'name': '50 Reports Milestone', 'icon': '⭐', 'color': 'silver'})
+        if completed_scans >= 10:
+            badges.append({'name': '10 Reports Completed', 'icon': '🎯', 'color': 'bronze'})
+        if avg_processing_time > 0 and avg_processing_time < 24:
+            badges.append({'name': 'Fast Response 24H', 'icon': '⚡', 'color': 'blue'})
+        if pending_scans == 0 and total_scans > 0:
+            badges.append({'name': 'All Caught Up', 'icon': '✅', 'color': 'green'})
+        
+        # Calculate completion percentage
+        completion_percentage = (completed_scans / total_scans * 100) if total_scans > 0 else 0
+        
+        context = {
+            'user_name': request.session.get('user_name', ''),
+            'user_email': user_email,
+            'user_role': user_role,
+            'total_scans': total_scans,
+            'completed_scans': completed_scans,
+            'pending_scans': pending_scans,
+            'under_review': under_review,
+            'avg_processing_time': round(avg_processing_time, 2),
+            'total_users': total_users,
+            'radiologists_count': radiologists_count,
+            'technicians_count': technicians_count,
+            'scan_types': dict(scan_types),
+            'badges': badges,
+            'completion_percentage': round(completion_percentage, 1),
+            'recent_scans': all_scans[:10]  # Last 10 scans
+        }
+        
+        return render(request, 'analytics_dashboard.html', context)
+        
+    except Exception as e:
+        messages.error(request, f'Error loading dashboard: {str(e)}')
+        return redirect('home')
+
+
+@role_required(['radiologist', 'technician', 'admin'])
+def api_daily_scans(request):
+    """
+    API endpoint: Returns daily scan counts for the last 30 days
+    Returns JSON: {labels: [...], data: [...]}
+    """
+    try:
+        scans_collection = MongoDB.get_scans_collection()
+        user_role = request.session.get('user_role', '')
+        user_email = request.session.get('user_email', '')
+        
+        # Filter based on role
+        if user_role == 'technician':
+            base_filter = {'uploaded_by': user_email}
+        elif user_role == 'radiologist':
+            base_filter = {'reviewed_by': user_email}
+        else:
+            base_filter = {}
+        
+        # Get scans from last 30 days
+        thirty_days_ago = datetime.now() - timedelta(days=30)
+        all_scans = list(scans_collection.find(base_filter))
+        
+        # Group by date
+        daily_counts = defaultdict(int)
+        for scan in all_scans:
+            upload_date = scan.get('uploaded_at')
+            if upload_date and isinstance(upload_date, datetime) and upload_date >= thirty_days_ago:
+                date_key = upload_date.strftime('%Y-%m-%d')
+                daily_counts[date_key] += 1
+        
+        # Generate labels for all 30 days
+        labels = []
+        data = []
+        for i in range(30):
+            date = datetime.now() - timedelta(days=29-i)
+            date_key = date.strftime('%Y-%m-%d')
+            labels.append(date.strftime('%b %d'))
+            data.append(daily_counts.get(date_key, 0))
+        
+        return JsonResponse({
+            'labels': labels,
+            'data': data
+        })
+        
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@role_required(['radiologist', 'technician', 'admin'])
+def api_scan_types(request):
+    """
+    API endpoint: Returns scan type distribution
+    Returns JSON: {labels: [...], data: [...]}
+    """
+    try:
+        scans_collection = MongoDB.get_scans_collection()
+        user_role = request.session.get('user_role', '')
+        user_email = request.session.get('user_email', '')
+        
+        if user_role == 'technician':
+            base_filter = {'uploaded_by': user_email}
+        elif user_role == 'radiologist':
+            base_filter = {'reviewed_by': user_email}
+        else:
+            base_filter = {}
+        
+        all_scans = list(scans_collection.find(base_filter))
+        scan_types = Counter([scan.get('scan_type', 'Unknown') for scan in all_scans])
+        
+        return JsonResponse({
+            'labels': list(scan_types.keys()),
+            'data': list(scan_types.values())
+        })
+        
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@role_required(['admin', 'radiologist'])
+def api_workload_distribution(request):
+    """
+    API endpoint: Returns workload distribution among radiologists
+    Returns JSON: {labels: [...], data: [...]}
+    """
+    try:
+        scans_collection = MongoDB.get_scans_collection()
+        
+        # Get completed scans
+        completed_scans = list(scans_collection.find({'status': 'Completed'}))
+        
+        # Count scans per radiologist
+        workload = Counter([scan.get('reviewed_by', 'Unassigned') for scan in completed_scans])
+        
+        return JsonResponse({
+            'labels': list(workload.keys()),
+            'data': list(workload.values())
+        })
+        
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@role_required(['radiologist', 'technician', 'admin'])
+def api_heatmap_data(request):
+    """
+    API endpoint: Returns heatmap data for activity grid (last 365 days)
+    Returns JSON: [{date: 'YYYY-MM-DD', count: X}, ...]
+    """
+    try:
+        scans_collection = MongoDB.get_scans_collection()
+        user_role = request.session.get('user_role', '')
+        user_email = request.session.get('user_email', '')
+        
+        if user_role == 'technician':
+            base_filter = {'uploaded_by': user_email}
+        elif user_role == 'radiologist':
+            base_filter = {'reviewed_by': user_email}
+        else:
+            base_filter = {}
+        
+        # Get scans from last 365 days
+        one_year_ago = datetime.now() - timedelta(days=365)
+        all_scans = list(scans_collection.find(base_filter))
+        
+        # Group by date
+        daily_counts = defaultdict(int)
+        for scan in all_scans:
+            upload_date = scan.get('uploaded_at')
+            if upload_date and isinstance(upload_date, datetime) and upload_date >= one_year_ago:
+                date_key = upload_date.strftime('%Y-%m-%d')
+                daily_counts[date_key] += 1
+        
+        # Convert to list format
+        heatmap_data = [{'date': date, 'count': count} for date, count in daily_counts.items()]
+        
+        return JsonResponse(heatmap_data, safe=False)
+        
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@role_required(['radiologist', 'technician', 'admin'])
+def api_performance_chart(request):
+    """
+    API endpoint: Returns daily performance metrics (last 7 days)
+    Returns JSON: {labels: [...], completed: [...], pending: [...]}
+    """
+    try:
+        scans_collection = MongoDB.get_scans_collection()
+        user_role = request.session.get('user_role', '')
+        user_email = request.session.get('user_email', '')
+        
+        if user_role == 'technician':
+            base_filter = {'uploaded_by': user_email}
+        elif user_role == 'radiologist':
+            base_filter = {'reviewed_by': user_email}
+        else:
+            base_filter = {}
+        
+        # Get scans from last 7 days
+        seven_days_ago = datetime.now() - timedelta(days=7)
+        all_scans = list(scans_collection.find(base_filter))
+        
+        # Group by date and status
+        daily_completed = defaultdict(int)
+        daily_pending = defaultdict(int)
+        
+        for scan in all_scans:
+            upload_date = scan.get('uploaded_at')
+            if upload_date and isinstance(upload_date, datetime) and upload_date >= seven_days_ago:
+                date_key = upload_date.strftime('%Y-%m-%d')
+                if scan.get('status') == 'Completed':
+                    daily_completed[date_key] += 1
+                else:
+                    daily_pending[date_key] += 1
+        
+        # Generate labels for all 7 days
+        labels = []
+        completed_data = []
+        pending_data = []
+        
+        for i in range(7):
+            date = datetime.now() - timedelta(days=6-i)
+            date_key = date.strftime('%Y-%m-%d')
+            labels.append(date.strftime('%a'))
+            completed_data.append(daily_completed.get(date_key, 0))
+            pending_data.append(daily_pending.get(date_key, 0))
+        
+        return JsonResponse({
+            'labels': labels,
+            'completed': completed_data,
+            'pending': pending_data
+        })
+        
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
 
 

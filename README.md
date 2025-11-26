@@ -15,8 +15,12 @@ This system enables technicians to upload medical imaging scans (X-rays, CT, MRI
 - ✅ **Image Upload System** for Technicians
 - ✅ **Scan Review System** for Radiologists
 - ✅ **Report Submission & Management**
+- ✅ **PDF Report Generation** with QR code verification
+- ✅ **Analytics Dashboard** with LeetCode-style UI
 - ✅ **MongoDB Scans Collection** for storing scan metadata
 - ✅ **File Storage System** in /media/scans/
+- ✅ **Interactive Charts** with Chart.js
+- ✅ **Activity Heatmap** for performance tracking
 - 🔜 AI model integration (Coming Soon)
 - 🔜 AI prediction & confidence scoring (Coming Soon)
 
@@ -32,6 +36,7 @@ This system enables technicians to upload medical imaging scans (X-rays, CT, MRI
 - **Authentication**: Custom authentication with bcrypt
 - **Frontend**: HTML5, CSS3, Bootstrap 5
 - **PDF Generation**: ReportLab, qrcode, Pillow
+- **Charts & Analytics**: Chart.js
 - **Python Version**: 3.13
 
 ## 📦 Installation & Setup
@@ -94,6 +99,12 @@ This system enables technicians to upload medical imaging scans (X-rays, CT, MRI
 | `/technician/scans/` | View all scans | Technician only |
 | `/technician/scan/<id>/` | View scan details | Technician only |
 | `/generate-pdf/<id>/` | Generate & download PDF report | Radiologist & Technician |
+| `/analytics/` | Analytics dashboard with charts | All authenticated users |
+| `/api/daily-scans/` | API: Daily scan statistics (JSON) | All authenticated users |
+| `/api/scan-types/` | API: Scan type distribution (JSON) | All authenticated users |
+| `/api/workload/` | API: Workload distribution (JSON) | Admin & Radiologist |
+| `/api/heatmap/` | API: Activity heatmap data (JSON) | All authenticated users |
+| `/api/performance/` | API: Weekly performance (JSON) | All authenticated users |
 
 ## 📁 Project Structure
 

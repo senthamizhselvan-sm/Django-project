@@ -2,8 +2,8 @@
 
 {% block title %}Upload Scan - Radiology AI{% endblock %}
 
-{% block content %}
-<div class="container mt-5 mb-5">
+{% block authenticated_content %}
+<div class="container-fluid">
     <div class="row justify-content-center">
         <div class="col-lg-8">
             <div class="card shadow">
@@ -116,31 +116,4 @@
         </div>
     </div>
 </div>
-
-<style>
-.card {
-    border-radius: 15px;
-}
-
-.form-label {
-    font-weight: 600;
-    color: #2d3748;
-}
-
-.form-control:focus, .form-select:focus {
-    border-color: #38ef7d;
-    box-shadow: 0 0 0 0.2rem rgba(56, 239, 125, 0.25);
-}
-
-.btn-success {
-    background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
-    border: none;
-}
-
-.btn-success:hover {
-    background: linear-gradient(135deg, #0e8070 0%, #2dd96a 100%);
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-}
-</style>
 {% endblock %}

@@ -1,0 +1,621 @@
+{% extends 'base.html' %}
+
+{% block title %}Radiology Report - {{ scan.patient_name }} - {{ scan.patient_id }}{% endblock %}
+{% block page_title %}Medical Report{% endblock %}
+
+{% block authenticated_content %}
+<div class="report-container">
+    <!-- Hospital Header Section -->
+    <div class="hospital-header">
+        <div class="hospital-header-content">
+            <div class="logo-section">
+                <div class="hospital-logo">
+                    <i class="bi bi-hospital-fill"></i>
+                </div>
+                <div class="hospital-details">
+                    <h1 class="hospital-name">MEDICARE ADVANCED DIAGNOSTIC & IMAGING CENTER</h1>
+                    <p class="hospital-credentials">
+                        <span class="accreditation">Accredited by NABH</span>
+                        <span class="separator">|</span>
+                        <span class="emergency">Emergency Helpline: +91 98XXXXXX</span>
+                    </p>
+                </div>
+            </div>
+            <div class="report-type">
+                <h2>RADIOLOGY REPORT</h2>
+                <p class="report-date">Generated: {{ scan.reviewed_at|date:"d M Y H:i A" }}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Patient Information Section -->
+    <div class="report-section">
+        <div class="section-header">
+            <h3>PATIENT INFORMATION</h3>
+        </div>
+        <div class="section-content">
+            <div class="patient-info-grid">
+                <div class="info-row">
+                    <div class="info-item">
+                        <label>Patient Name:</label>
+                        <span class="value">{{ scan.patient_name }}</span>
+                    </div>
+                    <div class="info-item">
+                        <label>Patient ID:</label>
+                        <span class="value">{{ scan.patient_id }}</span>
+                    </div>
+                </div>
+                <div class="info-row">
+                    <div class="info-item">
+                        <label>Age:</label>
+                        <span class="value">{{ scan.age }}</span>
+                    </div>
+                    <div class="info-item">
+                        <label>Gender:</label>
+                        <span class="value">{{ scan.gender }}</span>
+                    </div>
+                </div>
+                <div class="info-row">
+                    <div class="info-item">
+                        <label>Scan Type:</label>
+                        <span class="value">{{ scan.scan_type }}</span>
+                    </div>
+                    <div class="info-item">
+                        <label>Status:</label>
+                        <span class="value status-completed">{{ scan.status }}</span>
+                    </div>
+                </div>
+                <div class="info-row">
+                    <div class="info-item">
+                        <label>Uploaded:</label>
+                        <span class="value">{{ scan.uploaded_at|date:"d M Y H:i A" }}</span>
+                    </div>
+                    <div class="info-item">
+                        <label>Reported:</label>
+                        <span class="value">{{ scan.reviewed_at|date:"d M Y H:i A" }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI Analysis Section (if available) -->
+    {% if scan.ai_prediction %}
+    <div class="report-section">
+        <div class="section-header">
+            <h3>AI ANALYSIS</h3>
+        </div>
+        <div class="section-content">
+            <div class="ai-analysis">
+                <div class="analysis-item">
+                    <label>AI Prediction:</label>
+                    <span class="value">{{ scan.ai_prediction }}</span>
+                </div>
+                <div class="analysis-item">
+                    <label>Confidence Level:</label>
+                    <span class="value">
+                        {{ scan.ai_confidence }}%
+                        <div class="confidence-bar">
+                            <div class="confidence-fill" data-width="{{ scan.ai_confidence|default:'0' }}"></div>
+                        </div>
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Radiology Findings Section -->
+    <div class="report-section">
+        <div class="section-header">
+            <h3>RADIOLOGY FINDINGS & OBSERVATION</h3>
+        </div>
+        <div class="section-content">
+            <div class="findings-container">
+                <div class="findings-label">
+                    <label>Impression / Doctor Notes:</label>
+                </div>
+                <div class="findings-content">
+                    <div class="findings-text">
+                        {{ scan.radiologist_report|linebreaks }}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Doctor Details & Signature Section -->
+    <div class="report-section">
+        <div class="section-header">
+            <h3>DOCTOR DETAILS & SIGNATURE</h3>
+        </div>
+        <div class="section-content">
+            <div class="doctor-signature-section">
+                <div class="doctor-details">
+                    <div class="doctor-info">
+                        <label>Reviewed By:</label>
+                        <span class="value">Dr. {{ scan.reviewed_by }}</span>
+                    </div>
+                    <div class="doctor-info">
+                        <label>Role:</label>
+                        <span class="value">Senior Consultant Radiologist</span>
+                    </div>
+                    <div class="doctor-info">
+                        <label>Email:</label>
+                        <span class="value">{{ scan.reviewed_by|lower }}@medicare.com</span>
+                    </div>
+                </div>
+                <div class="signature-area">
+                    <div class="signature-placeholder">
+                        <div class="signature-image">
+                            <i class="bi bi-pen"></i>
+                            <span>Digital Signature</span>
+                        </div>
+                        <div class="signature-line"></div>
+                        <div class="signature-text">Dr. {{ scan.reviewed_by }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- QR Code Verification Section -->
+    <div class="report-section verification-section">
+        <div class="verification-content">
+            <div class="qr-section">
+                <div class="qr-placeholder">
+                    <i class="bi bi-qr-code"></i>
+                    <span>QR Code</span>
+                </div>
+                <span class="qr-text">Scan to verify authenticity</span>
+            </div>
+            <div class="verification-info">
+                <p><strong>Report ID:</strong> RPT{{ scan.id }}{{ scan.uploaded_at|date:"Ymd" }}</p>
+                <p><strong>Generated:</strong> {{ scan.reviewed_at|date:"d/m/Y H:i" }}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confidentiality Footer -->
+    <div class="confidentiality-footer">
+        <p>
+            <strong>Confidential:</strong> This report is electronically generated and does not require physical signature unless explicitly mentioned.
+            This document contains confidential patient information and should be handled in accordance with applicable privacy laws.
+        </p>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="report-actions no-print">
+        <button onclick="window.print()" class="btn btn-primary">
+            <i class="bi bi-printer"></i> Print Report
+        </button>
+        <a href="{% url 'generate_pdf' scan.id %}" class="btn btn-secondary">
+            <i class="bi bi-file-pdf"></i> Download PDF
+        </a>
+        <a href="{% url 'analyze_scan' scan.id %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Back to Details
+        </a>
+    </div>
+</div>
+
+<style>
+/* Medical Report Styling */
+.report-container {
+    max-width: 210mm; /* A4 width */
+    margin: 0 auto;
+    background: white;
+    font-family: 'Arial', 'Helvetica', sans-serif;
+    color: #000;
+    line-height: 1.4;
+    font-size: 14px;
+}
+
+/* Hospital Header */
+.hospital-header {
+    background: linear-gradient(135deg, #1a237e 0%, #0d47a1 100%);
+    color: white;
+    padding: 20px;
+    margin-bottom: 0;
+    border-bottom: 4px solid #0d47a1;
+}
+
+.hospital-header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.logo-section {
+    display: flex;
+    align-items: center;
+    flex: 1;
+}
+
+.hospital-logo {
+    font-size: 48px;
+    margin-right: 20px;
+    color: white;
+}
+
+.hospital-details h1 {
+    font-size: 24px;
+    font-weight: bold;
+    margin: 0;
+    letter-spacing: 1px;
+}
+
+.hospital-credentials {
+    font-size: 12px;
+    margin: 5px 0 0 0;
+    opacity: 0.9;
+}
+
+.separator {
+    margin: 0 10px;
+}
+
+.report-type {
+    text-align: right;
+}
+
+.report-type h2 {
+    font-size: 20px;
+    font-weight: bold;
+    margin: 0;
+}
+
+.report-date {
+    font-size: 12px;
+    margin: 5px 0 0 0;
+    opacity: 0.9;
+}
+
+/* Report Sections */
+.report-section {
+    margin-bottom: 25px;
+    border: 1px solid #e0e0e0;
+    background: white;
+}
+
+.section-header {
+    background: #f5f5f5;
+    padding: 12px 20px;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.section-header h3 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: bold;
+    color: #1a237e;
+    letter-spacing: 0.5px;
+}
+
+.section-content {
+    padding: 20px;
+}
+
+/* Patient Information Grid */
+.patient-info-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.info-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 30px;
+}
+
+.info-item {
+    display: flex;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px dotted #ddd;
+}
+
+.info-item label {
+    font-weight: bold;
+    color: #424242;
+    min-width: 120px;
+    margin-right: 15px;
+}
+
+.info-item .value {
+    color: #000;
+    font-weight: 500;
+}
+
+.status-completed {
+    color: #2e7d32;
+    font-weight: bold;
+}
+
+/* AI Analysis */
+.ai-analysis {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.analysis-item {
+    display: flex;
+    align-items: center;
+    padding: 10px 0;
+}
+
+.analysis-item label {
+    font-weight: bold;
+    color: #424242;
+    min-width: 150px;
+    margin-right: 15px;
+}
+
+.confidence-bar {
+    width: 200px;
+    height: 8px;
+    background: #e0e0e0;
+    border-radius: 4px;
+    margin-left: 10px;
+    overflow: hidden;
+}
+
+.confidence-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #ff9800, #4caf50);
+    transition: width 0.3s ease;
+}
+
+/* Findings Section */
+.findings-container {
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.findings-label {
+    background: #f8f9fa;
+    padding: 12px 20px;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.findings-label label {
+    font-weight: bold;
+    color: #1a237e;
+    margin: 0;
+}
+
+.findings-content {
+    padding: 20px;
+    min-height: 120px;
+}
+
+.findings-text {
+    line-height: 1.6;
+    color: #000;
+    white-space: pre-wrap;
+    font-family: 'Courier New', monospace;
+    background: #fafafa;
+    padding: 15px;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    min-height: 80px;
+}
+
+/* Doctor Signature Section */
+.doctor-signature-section {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 40px;
+    align-items: start;
+}
+
+.doctor-details {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.doctor-info {
+    display: flex;
+    align-items: center;
+    padding: 5px 0;
+}
+
+.doctor-info label {
+    font-weight: bold;
+    color: #424242;
+    min-width: 100px;
+    margin-right: 15px;
+}
+
+.signature-area {
+    text-align: center;
+    min-width: 200px;
+}
+
+.signature-placeholder {
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 20px;
+    background: #fafafa;
+    min-height: 120px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.signature-image {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    color: #666;
+    font-size: 24px;
+    margin-bottom: 10px;
+}
+
+.signature-image span {
+    font-size: 12px;
+    margin-top: 5px;
+}
+
+.signature-line {
+    border-bottom: 2px solid #000;
+    margin: 10px 0 5px 0;
+}
+
+.signature-text {
+    font-size: 12px;
+    color: #424242;
+    font-weight: bold;
+}
+
+/* Verification Section */
+.verification-section {
+    background: #f8f9fa;
+    border-color: #dee2e6;
+}
+
+.verification-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.qr-section {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.qr-placeholder {
+    width: 60px;
+    height: 60px;
+    border: 2px solid #666;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    font-size: 24px;
+    color: #666;
+}
+
+.qr-placeholder span {
+    font-size: 8px;
+    margin-top: 2px;
+}
+
+.qr-text {
+    font-size: 12px;
+    color: #424242;
+}
+
+.verification-info {
+    text-align: right;
+    font-size: 11px;
+    color: #666;
+}
+
+.verification-info p {
+    margin: 2px 0;
+}
+
+/* Confidentiality Footer */
+.confidentiality-footer {
+    background: #f5f5f5;
+    padding: 15px 20px;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    margin-top: 20px;
+}
+
+.confidentiality-footer p {
+    margin: 0;
+    font-size: 11px;
+    color: #424242;
+    text-align: center;
+    line-height: 1.5;
+}
+
+/* Action Buttons */
+.report-actions {
+    margin-top: 30px;
+    padding: 20px;
+    text-align: center;
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+}
+
+/* Print Styles */
+@media print {
+    .no-print {
+        display: none !important;
+    }
+    
+    .report-container {
+        max-width: none;
+        margin: 0;
+        background: white;
+        box-shadow: none;
+    }
+    
+    .report-section {
+        page-break-inside: avoid;
+    }
+    
+    .hospital-header {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .hospital-header-content {
+        flex-direction: column;
+        text-align: center;
+        gap: 15px;
+    }
+    
+    .logo-section {
+        justify-content: center;
+    }
+    
+    .info-row {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+    
+    .doctor-signature-section {
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+    
+    .verification-content {
+        flex-direction: column;
+        gap: 15px;
+        text-align: center;
+    }
+    
+    .report-actions {
+        flex-direction: column;
+        align-items: center;
+    }
+}
+</style>
+
+<script>
+// Set confidence bar width from data attribute
+document.addEventListener('DOMContentLoaded', function() {
+    const confidenceFill = document.querySelector('.confidence-fill[data-width]');
+    if (confidenceFill) {
+        const width = confidenceFill.getAttribute('data-width');
+        confidenceFill.style.width = width + '%';
+    }
+});
+</script>
+{% endblock %}

@@ -67,6 +67,7 @@ coverage.xml
 
 # Temporary documentation files (excluding main README and guides)
 TESTING_GUIDE.md
+CLEANUP_SUMMARY.md
 ROLE_BASED_SYSTEM.md
 TASK_COMPLETION.md
 ARCHITECTURE.md

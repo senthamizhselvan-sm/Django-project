@@ -2,7 +2,20 @@
 
 {% block title %}Login - Radiology AI{% endblock %}
 
-{% block content %}
+{% block public_content %}
+{% if not request.session.user_id %}
+<style>
+    /* Position content inside the public layout */
+    .login-content {
+        position: absolute;
+        top: 80px;
+        left: 0;
+        right: 0;
+        bottom: 60px;
+        overflow-y: auto;
+    }
+</style>
+<div class="login-content">
 <div class="auth-container">
     <div class="auth-card">
         <h2>Login to Your Account</h2>
@@ -31,4 +44,6 @@
         </div>
     </div>
 </div>
+</div>
+{% endif %}
 {% endblock %}

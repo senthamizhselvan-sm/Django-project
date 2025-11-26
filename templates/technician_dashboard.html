@@ -1,179 +1,145 @@
 {% extends 'base.html' %}
 
 {% block title %}Technician Dashboard - Radiology AI{% endblock %}
+{% block page_title %}Technician Dashboard{% endblock %}
 
-{% block content %}
-<div class="container mt-5">
-    <div class="row">
-        <div class="col-12">
-            <div class="dashboard-header-card mb-4">
-                <h1 class="display-5"><i class="bi bi-upload text-white"></i> Welcome, {{ user_name }}!</h1>
-                <p class="lead text-white">Technician Dashboard - AI-Assisted Radiology Reporting System</p>
-            </div>
+{% block authenticated_content %}
+<!-- Stats Overview -->
+<div class="stats-grid">
+    <div class="stats-card">
+        <i class="stats-card-icon bi bi-cloud-upload"></i>
+        <div class="stats-card-value">{{ total_uploads }}</div>
+        <div class="stats-card-label">Total Uploads</div>
+        <div class="stats-card-change positive">
+            <i class="bi bi-arrow-up"></i>
+            +12% from last month
         </div>
     </div>
-
-    <!-- Quick Stats -->
-    <div class="row mb-4">
-        <div class="col-md-3">
-            <div class="card stats-card text-center">
-                <div class="card-body">
-                    <i class="bi bi-cloud-upload-fill fs-1 text-primary"></i>
-                    <h3 class="mt-2">{{ total_uploads }}</h3>
-                    <p class="text-muted">Total Uploads</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card stats-card text-center">
-                <div class="card-body">
-                    <i class="bi bi-hourglass-split fs-1 text-warning"></i>
-                    <h3 class="mt-2">{{ pending }}</h3>
-                    <p class="text-muted">Pending</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card stats-card text-center">
-                <div class="card-body">
-                    <i class="bi bi-eye-fill fs-1 text-info"></i>
-                    <h3 class="mt-2">{{ under_review }}</h3>
-                    <p class="text-muted">Under Review</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card stats-card text-center">
-                <div class="card-body">
-                    <i class="bi bi-check-circle-fill fs-1 text-success"></i>
-                    <h3 class="mt-2">{{ completed }}</h3>
-                    <p class="text-muted">Completed</p>
-                </div>
-            </div>
+    
+    <div class="stats-card">
+        <i class="stats-card-icon bi bi-hourglass-split"></i>
+        <div class="stats-card-value">{{ pending }}</div>
+        <div class="stats-card-label">Pending Analysis</div>
+        <div class="stats-card-change">
+            <i class="bi bi-dash"></i>
+            No change
         </div>
     </div>
-
-    <!-- Upload Button -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <a href="{% url 'upload_scan' %}" class="btn btn-primary btn-lg w-100">
-                <i class="bi bi-cloud-upload"></i> Upload New Scan
-            </a>
+    
+    <div class="stats-card">
+        <i class="stats-card-icon bi bi-eye"></i>
+        <div class="stats-card-value">{{ under_review }}</div>
+        <div class="stats-card-label">Under Review</div>
+        <div class="stats-card-change positive">
+            <i class="bi bi-arrow-up"></i>
+            +5% this week
         </div>
     </div>
-
-    <!-- Uploaded Scans Section -->
-    <div class="row">
-        <div class="col-12">
-            <div class="card shadow-sm">
-                <div class="card-header bg-success text-white">
-                    <h4 class="mb-0"><i class="bi bi-list-ul"></i> Uploaded Scan List</h4>
-                </div>
-                <div class="card-body">
-                    {% if uploaded_scans %}
-                    <div class="table-responsive">
-                        <table class="table table-hover">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>Patient Name</th>
-                                    <th>Scan Type</th>
-                                    <th>Uploaded Date</th>
-                                    <th>Status</th>
-                                    <th>Action</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for scan in uploaded_scans %}
-                                <tr>
-                                    <td><i class="bi bi-person-fill text-secondary"></i> {{ scan.patient_name }}</td>
-                                    <td>{{ scan.scan_type }}</td>
-                                    <td>{{ scan.uploaded_date }}</td>
-                                    <td>
-                                        {% if scan.status == 'Pending Analysis' %}
-                                            <span class="badge bg-warning text-dark">{{ scan.status }}</span>
-                                        {% elif scan.status == 'Under Review' %}
-                                            <span class="badge bg-info">{{ scan.status }}</span>
-                                        {% elif scan.status == 'Completed' %}
-                                            <span class="badge bg-success">{{ scan.status }}</span>
-                                        {% else %}
-                                            <span class="badge bg-secondary">{{ scan.status }}</span>
-                                        {% endif %}
-                                    </td>
-                                    <td>
-                                        <a href="{% url 'view_scan_detail' scan.id %}" class="btn btn-sm btn-outline-primary">
-                                            <i class="bi bi-eye"></i> View
-                                        </a>
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                    {% else %}
-                    <div class="text-center py-5">
-                        <i class="bi bi-inbox fs-1 text-muted"></i>
-                        <p class="text-muted mt-3">No scans uploaded yet.</p>
-                        <a href="{% url 'upload_scan' %}" class="btn btn-primary mt-2">
-                            <i class="bi bi-cloud-upload"></i> Upload Your First Scan
-                        </a>
-                    </div>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Action Buttons -->
-    <div class="row mt-4 mb-5">
-        <div class="col-md-4">
-            <a href="{% url 'view_scans' %}" class="btn btn-info btn-lg w-100 text-white">
-                <i class="bi bi-folder2-open"></i> View All Scans
-            </a>
-        </div>
-        <div class="col-md-4">
-            <a href="{% url 'view_completed_reports' %}" class="btn btn-success btn-lg w-100">
-                <i class="bi bi-file-earmark-check"></i> Completed Reports
-            </a>
-        </div>
-        <div class="col-md-4">
-            <a href="{% url 'logout' %}" class="btn btn-outline-danger btn-lg w-100">
-                <i class="bi bi-box-arrow-right"></i> Logout
-            </a>
+    
+    <div class="stats-card">
+        <i class="stats-card-icon bi bi-check-circle"></i>
+        <div class="stats-card-value">{{ completed }}</div>
+        <div class="stats-card-label">Completed</div>
+        <div class="stats-card-change positive">
+            <i class="bi bi-arrow-up"></i>
+            +18% this week
         </div>
     </div>
 </div>
 
-<style>
-.dashboard-header-card {
-    padding: 2rem;
-    background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
-    color: white;
-    border-radius: 15px;
-    box-shadow: 0 5px 20px rgba(0,0,0,0.1);
-}
+<!-- Primary Action -->
+<div class="mb-4">
+    <a href="{% url 'upload_scan' %}" class="btn btn-primary btn-lg">
+        <i class="bi bi-cloud-upload"></i>
+        New Patient Scan
+    </a>
+</div>
 
-.stats-card {
-    border: none;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-    transition: transform 0.3s ease;
-}
+<!-- Scan List Table -->
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">Scan List</h2>
+        <p class="card-subtitle">Recent patient scans and their current status</p>
+    </div>
+    <div class="card-body">
+        {% if uploaded_scans %}
+        <div class="table-container">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Patient Name</th>
+                        <th>Scan Type</th>
+                        <th>Upload Date</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for scan in uploaded_scans %}
+                    <tr>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <i class="bi bi-person-fill text-muted me-2"></i>
+                                <strong>{{ scan.patient_name }}</strong>
+                            </div>
+                        </td>
+                        <td>{{ scan.scan_type }}</td>
+                        <td>{{ scan.uploaded_date|date:"M j, Y g:i A" }}</td>
+                        <td>
+                            {% if scan.status == 'Pending Analysis' %}
+                                <span class="badge badge-warning">{{ scan.status }}</span>
+                            {% elif scan.status == 'Under Review' %}
+                                <span class="badge badge-info">{{ scan.status }}</span>
+                            {% elif scan.status == 'Completed' %}
+                                <span class="badge badge-success">{{ scan.status }}</span>
+                            {% else %}
+                                <span class="badge badge-secondary">{{ scan.status }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="{% url 'view_scan_detail' scan.id %}" class="btn btn-sm btn-secondary">
+                                <i class="bi bi-eye"></i>
+                                View
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+            <i class="bi bi-inbox" style="font-size: 3rem; color: var(--text-muted);"></i>
+            <p class="text-muted mt-3 mb-4">No scans uploaded yet.</p>
+            <a href="{% url 'upload_scan' %}" class="btn btn-primary">
+                <i class="bi bi-cloud-upload"></i>
+                Upload Your First Scan
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
 
-.stats-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 5px 20px rgba(0,0,0,0.15);
-}
-
-.card {
-    border-radius: 10px;
-}
-
-.table th {
-    font-weight: 600;
-    color: #495057;
-}
-
-.btn {
-    border-radius: 8px;
-}
-</style>
+<!-- Quick Actions -->
+<div class="row mt-4">
+    <div class="col-md-4 mb-3">
+        <a href="{% url 'view_scans' %}" class="btn btn-secondary w-100">
+            <i class="bi bi-folder2-open"></i>
+            View All Scans
+        </a>
+    </div>
+    <div class="col-md-4 mb-3">
+        <a href="{% url 'view_completed_reports' %}" class="btn btn-success w-100">
+            <i class="bi bi-file-earmark-check"></i>
+            Completed Reports
+        </a>
+    </div>
+    <div class="col-md-4 mb-3">
+        <a href="{% url 'analytics_dashboard' %}" class="btn btn-secondary w-100">
+            <i class="bi bi-graph-up"></i>
+            Analytics
+        </a>
+    </div>
+</div>
+</div>
 {% endblock %}

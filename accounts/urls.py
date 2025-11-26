@@ -26,4 +26,14 @@ urlpatterns = [
     path('technician/upload/', views.upload_scan, name='upload_scan'),
     path('technician/scans/', views.view_scans, name='view_scans'),
     path('technician/scan/<str:scan_id>/', views.view_scan_detail, name='view_scan_detail'),
+    
+    # Analytics Dashboard routes
+    path('analytics/', views.analytics_dashboard, name='analytics_dashboard'),
+    
+    # Analytics API endpoints (JSON responses for charts)
+    path('api/daily-scans/', views.api_daily_scans, name='api_daily_scans'),
+    path('api/scan-types/', views.api_scan_types, name='api_scan_types'),
+    path('api/workload/', views.api_workload_distribution, name='api_workload'),
+    path('api/heatmap/', views.api_heatmap_data, name='api_heatmap'),
+    path('api/performance/', views.api_performance_chart, name='api_performance'),
 ]

@@ -2,7 +2,20 @@
 
 {% block title %}Home - Radiology AI{% endblock %}
 
-{% block content %}
+{% block public_content %}
+{% if not request.session.user_id %}
+<style>
+    /* Position content inside the public layout */
+    .home-content {
+        position: absolute;
+        top: 80px;
+        left: 0;
+        right: 0;
+        bottom: 60px;
+        overflow-y: auto;
+    }
+</style>
+<div class="home-content">
 <div class="hero-section">
     <div class="hero-content">
         <h1>AI-Assisted Radiology Reporting System</h1>
@@ -72,4 +85,6 @@
         <a href="{% url 'login' %}" class="btn btn-large btn-secondary">Login</a>
     </div>
 </div>
+</div>
+{% endif %}
 {% endblock %}

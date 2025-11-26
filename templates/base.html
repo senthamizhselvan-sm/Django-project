@@ -9,65 +9,197 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <!-- Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     
     {% load static %}
     <link rel="stylesheet" href="{% static 'css/style.css' %}">
 </head>
 <body>
-    <!-- Navigation Bar -->
-    <nav class="navbar">
-        <div class="nav-container">
-            <div class="logo">
-                <a href="{% url 'home' %}">🏥 Radiology AI</a>
-            </div>
-            <div class="nav-links">
-                {% if request.session.user_id %}
-                    <span class="user-greeting">Hello, {{ request.session.user_name }}</span>
+    {% if request.session.user_id %}
+        <!-- Enterprise Layout with Sidebar -->
+        <div class="layout-container">
+            <!-- Left Sidebar Navigation -->
+            <aside class="sidebar">
+                <div class="sidebar-header">
+                    <a href="{% url 'home' %}" class="sidebar-logo">
+                        <i class="bi bi-hospital"></i>
+                        Radiology AI
+                    </a>
+                </div>
+                
+                <nav class="sidebar-nav">
+                    <div class="nav-section">
+                        <div class="nav-section-title">Main</div>
+                        <div class="nav-item">
+                            <a href="{% if request.session.user_role == 'radiologist' %}{% url 'radiologist_dashboard' %}{% elif request.session.user_role == 'technician' %}{% url 'technician_dashboard' %}{% else %}{% url 'dashboard' %}{% endif %}" class="nav-link {% if 'dashboard' in request.resolver_match.url_name %}active{% endif %}">
+                                <i class="nav-icon bi bi-speedometer2"></i>
+                                Dashboard
+                            </a>
+                        </div>
+                        {% if request.session.user_role == 'technician' %}
+                        <div class="nav-item">
+                            <a href="{% url 'upload_scan' %}" class="nav-link {% if 'upload' in request.resolver_match.url_name %}active{% endif %}">
+                                <i class="nav-icon bi bi-cloud-upload"></i>
+                                New Patient Scan
+                            </a>
+                        </div>
+                        {% endif %}
+                        {% if request.session.user_role == 'radiologist' %}
+                        <div class="nav-item">
+                            <a href="{% url 'view_pending_scans' %}" class="nav-link {% if 'pending' in request.resolver_match.url_name %}active{% endif %}">
+                                <i class="nav-icon bi bi-hourglass-split"></i>
+                                Pending Reviews
+                            </a>
+                        </div>
+                        {% endif %}
+                        <div class="nav-item">
+                            <a href="{% url 'view_completed_reports' %}" class="nav-link {% if 'reports' in request.resolver_match.url_name %}active{% endif %}">
+                                <i class="nav-icon bi bi-file-earmark-medical"></i>
+                                Reports
+                            </a>
+                        </div>
+                    </div>
                     
-                    {% if request.session.user_role == 'radiologist' %}
-                        <a href="{% url 'radiologist_dashboard' %}" class="nav-btn">Dashboard</a>
-                        <a href="{% url 'view_pending_scans' %}" class="nav-btn">Pending Scans</a>
-                        <a href="{% url 'view_completed_reports' %}" class="nav-btn">Reports</a>
-                    {% elif request.session.user_role == 'technician' %}
-                        <a href="{% url 'technician_dashboard' %}" class="nav-btn">Dashboard</a>
-                        <a href="{% url 'upload_scan' %}" class="nav-btn">Upload Scan</a>
-                        <a href="{% url 'view_completed_reports' %}" class="nav-btn">Reports</a>
-                    {% else %}
-                        <a href="{% url 'dashboard' %}" class="nav-btn">Dashboard</a>
+                    <div class="nav-section">
+                        <div class="nav-section-title">Insights</div>
+                        <div class="nav-item">
+                            <a href="{% url 'analytics_dashboard' %}" class="nav-link {% if 'analytics' in request.resolver_match.url_name %}active{% endif %}">
+                                <i class="nav-icon bi bi-graph-up"></i>
+                                Analytics
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <div class="nav-section">
+                        <div class="nav-section-title">Account</div>
+                        <div class="nav-item">
+                            <a href="#" class="nav-link">
+                                <i class="nav-icon bi bi-gear"></i>
+                                Settings
+                            </a>
+                        </div>
+                        <div class="nav-item">
+                            <a href="{% url 'logout' %}" class="nav-link">
+                                <i class="nav-icon bi bi-box-arrow-right"></i>
+                                Sign Out
+                            </a>
+                        </div>
+                    </div>
+                </nav>
+            </aside>
+            
+            <!-- Main Content Area -->
+            <main class="main-content">
+                <!-- Top Bar -->
+                <header class="top-bar">
+                    <h1 class="page-title">{% block page_title %}Dashboard{% endblock %}</h1>
+                    <div class="user-menu">
+                        <span class="time-greeting" id="timeGreeting">Good day, {{ request.session.user_name }}</span>
+                        <div class="user-avatar">{{ request.session.user_name|first|upper }}</div>
+                    </div>
+                </header>
+                
+                <!-- Page Content -->
+                <div class="content-container">
+                    <!-- Messages -->
+                    {% if messages %}
+                        {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }}">
+                            {{ message }}
+                        </div>
+                        {% endfor %}
                     {% endif %}
                     
-                    <a href="{% url 'logout' %}" class="nav-btn btn-logout">Logout</a>
-                {% else %}
-                    <a href="{% url 'login' %}" class="nav-btn">Login</a>
-                    <a href="{% url 'register' %}" class="nav-btn btn-primary">Register</a>
+                    <!-- Child template content for authenticated users -->
+                    {% block authenticated_content %}
+                    {% endblock %}
+                </div>
+            </main>
+        </div>
+    {% else %}
+        <!-- Public Layout for Login/Register -->
+        <div class="public-layout">
+            <!-- Simple header for public pages -->
+            <header class="public-header">
+                <div class="container">
+                    <a href="{% url 'home' %}" class="logo">
+                        <i class="bi bi-hospital"></i>
+                        Radiology AI
+                    </a>
+                    <nav class="public-nav">
+                        <a href="{% url 'login' %}" class="btn btn-secondary">Login</a>
+                        <a href="{% url 'register' %}" class="btn btn-primary">Register</a>
+                    </nav>
+                </div>
+            </header>
+            
+            <main class="public-main">
+                <!-- Messages -->
+                {% if messages %}
+                <div class="container">
+                    {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }}">
+                        {{ message }}
+                    </div>
+                    {% endfor %}
+                </div>
                 {% endif %}
-            </div>
+                
+                <!-- Child template content for public users -->
+                {% block public_content %}
+                {% endblock %}
+            </main>
+            
+            <!-- Footer -->
+            <footer class="public-footer">
+                <div class="container">
+                    <p>&copy; 2025 AI-Assisted Radiology Reporting System. All rights reserved.</p>
+                </div>
+            </footer>
         </div>
-    </nav>
-
-    <!-- Messages -->
-    {% if messages %}
-    <div class="messages-container">
-        {% for message in messages %}
-        <div class="alert alert-{{ message.tags }}">
-            {{ message }}
-        </div>
-        {% endfor %}
-    </div>
     {% endif %}
-
-    <!-- Main Content -->
-    <main>
-        {% block content %}
+    
+    <!-- Fallback content block for templates that don't specify authenticated/public -->
+    {% block content %}
+    {% if request.session.user_id %}
+        {% block content_authenticated %}
         {% endblock %}
-    </main>
-
-    <!-- Footer -->
-    <footer>
-        <p>&copy; 2025 AI-Assisted Radiology Reporting System. All rights reserved.</p>
-    </footer>
+    {% else %}
+        {% block content_public %}
+        {% endblock %}
+    {% endif %}
+    {% endblock %}
     
     <!-- Bootstrap JS Bundle -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Time-based greeting script -->
+    <script>
+        function updateGreeting() {
+            const now = new Date();
+            const hour = now.getHours();
+            const userName = "{{ request.session.user_name }}";
+            const greetingElement = document.getElementById('timeGreeting');
+            
+            if (greetingElement && userName) {
+                let timeOfDay = '';
+                if (hour >= 5 && hour < 12) {
+                    timeOfDay = 'Good morning';
+                } else if (hour >= 12 && hour < 17) {
+                    timeOfDay = 'Good afternoon';
+                } else if (hour >= 17 && hour < 21) {
+                    timeOfDay = 'Good evening';
+                } else {
+                    timeOfDay = 'Good night';
+                }
+                
+                greetingElement.textContent = `${timeOfDay}, ${userName}`;
+            }
+        }
+        
+        // Update greeting when page loads
+        document.addEventListener('DOMContentLoaded', updateGreeting);
+    </script>
 </body>
 </html>
