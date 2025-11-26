@@ -39,14 +39,13 @@ In Render dashboard → Environment tab, add these variables:
 ```env
 DJANGO_SECRET_KEY=your-super-secret-production-key-here
 DEBUG=False
-ALLOWED_HOSTS=*.onrender.com
 MONGO_URI=mongodb+srv://senthamizhselvansm_db_user:Selva@123@cluster0.uufkp3i.mongodb.net/?appName=Cluster0
 MONGO_DB_NAME=radiology_db
 ```
 
 **Important:**
 - Generate a new `DJANGO_SECRET_KEY` for production (use Django's secret key generator)
-- `ALLOWED_HOSTS=*.onrender.com` allows all Render subdomains
+- `ALLOWED_HOSTS` is now handled automatically in settings.py
 - `DEBUG=False` is critical for production security
 
 ### 5. **Deploy**

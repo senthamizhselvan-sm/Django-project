@@ -34,7 +34,13 @@ SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'django-insecure-+b+yy&sg6jue2s
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DEBUG', 'False').lower() == 'true'
 
-ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1,*.onrender.com').split(',')
+# Allow all Render domains and localhost
+ALLOWED_HOSTS = ['*'] if DEBUG else [
+    'localhost',
+    '127.0.0.1', 
+    '.onrender.com',  # This allows all subdomains of onrender.com
+    'django-project-2-9xay.onrender.com',  # Your specific domain
+]
 
 # Port configuration for Render
 PORT = int(os.environ.get('PORT', 8000))
