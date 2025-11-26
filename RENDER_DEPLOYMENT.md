@@ -39,7 +39,7 @@ In Render dashboard → Environment tab, add these variables:
 ```env
 DJANGO_SECRET_KEY=your-super-secret-production-key-here
 DEBUG=False
-MONGO_URI=mongodb+srv://senthamizhselvansm_db_user:Selva@123@cluster0.uufkp3i.mongodb.net/?appName=Cluster0
+MONGO_URI=mongodb+srv://senthamizhselvansm_db_user:Selva%40123@cluster0.uufkp3i.mongodb.net/?appName=Cluster0
 MONGO_DB_NAME=radiology_db
 ```
 
