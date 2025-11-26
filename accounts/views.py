@@ -80,27 +80,33 @@ def register(request):
             return render(request, 'register.html')
         
         # Check if email already exists
-        users_collection = MongoDB.get_users_collection()
-        existing_user = users_collection.find_one({'email': email})
-        
-        if existing_user:
-            messages.error(request, 'Email already registered!')
+        try:
+            users_collection = MongoDB.get_users_collection()
+            existing_user = users_collection.find_one({'email': email})
+            
+            if existing_user:
+                messages.error(request, 'Email already registered!')
+                return render(request, 'register.html')
+            
+            # Hash password
+            hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
+            
+            # Insert user into MongoDB
+            user_data = {
+                'full_name': full_name,
+                'email': email,
+                'role': role,
+                'password': hashed_password.decode('utf-8')
+            }
+            users_collection.insert_one(user_data)
+            
+            messages.success(request, 'Registration successful! Please login.')
+            return redirect('login')
+            
+        except Exception as e:
+            print(f"MongoDB Error in registration: {e}")  # Log to server
+            messages.error(request, 'Database connection error. Please try again later.')
             return render(request, 'register.html')
-        
-        # Hash password
-        hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
-        
-        # Insert user into MongoDB
-        user_data = {
-            'full_name': full_name,
-            'email': email,
-            'role': role,
-            'password': hashed_password.decode('utf-8')
-        }
-        users_collection.insert_one(user_data)
-        
-        messages.success(request, 'Registration successful! Please login.')
-        return redirect('login')
     
     return render(request, 'register.html')
 
@@ -117,34 +123,40 @@ def login(request):
             messages.error(request, 'Email and password are required!')
             return render(request, 'login.html')
         
-        # Find user in MongoDB
-        users_collection = MongoDB.get_users_collection()
-        user = users_collection.find_one({'email': email})
-        
-        if not user:
-            messages.error(request, 'Invalid email or password!')
-            return render(request, 'login.html')
-        
-        # Verify password
-        if bcrypt.checkpw(password.encode('utf-8'), user['password'].encode('utf-8')):
-            # Store user info in session
-            request.session['user_id'] = str(user['_id'])
-            request.session['user_name'] = user['full_name']
-            request.session['user_email'] = user['email']
-            request.session['user_role'] = user.get('role', 'user')
+        try:
+            # Find user in MongoDB
+            users_collection = MongoDB.get_users_collection()
+            user = users_collection.find_one({'email': email})
             
-            messages.success(request, f'Welcome back, {user["full_name"]}!')
+            if not user:
+                messages.error(request, 'Invalid email or password!')
+                return render(request, 'login.html')
             
-            # Role-based redirect
-            user_role = user.get('role', 'user')
-            if user_role == 'radiologist':
-                return redirect('radiologist_dashboard')
-            elif user_role == 'technician':
-                return redirect('technician_dashboard')
+            # Verify password
+            if bcrypt.checkpw(password.encode('utf-8'), user['password'].encode('utf-8')):
+                # Store user info in session
+                request.session['user_id'] = str(user['_id'])
+                request.session['user_name'] = user['full_name']
+                request.session['user_email'] = user['email']
+                request.session['user_role'] = user.get('role', 'user')
+                
+                messages.success(request, f'Welcome back, {user["full_name"]}!')
+                
+                # Role-based redirect
+                user_role = user.get('role', 'user')
+                if user_role == 'radiologist':
+                    return redirect('radiologist_dashboard')
+                elif user_role == 'technician':
+                    return redirect('technician_dashboard')
+                else:
+                    return redirect('dashboard')
             else:
-                return redirect('dashboard')
-        else:
-            messages.error(request, 'Invalid email or password!')
+                messages.error(request, 'Invalid email or password!')
+                return render(request, 'login.html')
+                
+        except Exception as e:
+            print(f"MongoDB Error in login: {e}")  # Log to server
+            messages.error(request, 'Database connection error. Please try again later.')
             return render(request, 'login.html')
     
     return render(request, 'login.html')
