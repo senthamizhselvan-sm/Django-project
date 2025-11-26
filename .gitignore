@@ -10,6 +10,7 @@ build/
 *.pyc
 
 # Virtual Environment
+.env
 env/
 .venv/
 venv/
@@ -76,9 +77,13 @@ PDF_GENERATION_GUIDE.md
 PDF_IMPLEMENTATION_SUMMARY.md
 QUICK_START_PDF.md
 
+ENV_SETUP.md
+
+
 # Session data
 sessions/
 *.session
+
 
 # Temporary files
 *.tmp

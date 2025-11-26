@@ -11,6 +11,15 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
+import os
+
+# Optionally load environment variables from a local .env file if python-dotenv is installed
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except Exception:
+    # python-dotenv not installed or .env not present — continue using environment variables
+    pass
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -122,9 +131,10 @@ STATICFILES_DIRS = [BASE_DIR / 'static']
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
-# MongoDB Configuration
-MONGO_URI = 'mongodb://localhost:27017/'
-MONGO_DB_NAME = 'radiology_db'
+# MongoDB Configuration (use environment variable `MONGO_URI`)
+# Example: export MONGO_URI="mongodb+srv://user:pass@cluster0..."
+MONGO_URI = os.environ.get('MONGO_URI', 'mongodb://localhost:27017/')
+MONGO_DB_NAME = os.environ.get('MONGO_DB_NAME', 'radiology_db')
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
