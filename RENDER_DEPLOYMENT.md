@@ -29,8 +29,9 @@ git push origin main
 **Basic Settings:**
 - **Name**: `django-radiology-app`
 - **Runtime**: `Python 3`
-- **Build Command**: `pip install -r requirements.txt`
+- **Build Command**: `./build.sh`
 - **Start Command**: `gunicorn radiology.wsgi:application`
+- **Port**: Leave empty (auto-detected from $PORT)
 
 ### 4. **Set Environment Variables**
 In Render dashboard → Environment tab, add these variables:
@@ -38,14 +39,15 @@ In Render dashboard → Environment tab, add these variables:
 ```env
 DJANGO_SECRET_KEY=your-super-secret-production-key-here
 DEBUG=False
-ALLOWED_HOSTS=your-app-name.onrender.com
+ALLOWED_HOSTS=*.onrender.com
 MONGO_URI=mongodb+srv://senthamizhselvansm_db_user:Selva@123@cluster0.uufkp3i.mongodb.net/?appName=Cluster0
 MONGO_DB_NAME=radiology_db
 ```
 
 **Important:**
 - Generate a new `DJANGO_SECRET_KEY` for production (use Django's secret key generator)
-- Replace `your-app-name` with your actual Render app name in `ALLOWED_HOSTS`
+- `ALLOWED_HOSTS=*.onrender.com` allows all Render subdomains
+- `DEBUG=False` is critical for production security
 
 ### 5. **Deploy**
 - Click "Create Web Service"
